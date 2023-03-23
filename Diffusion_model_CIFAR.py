@@ -12,12 +12,10 @@ from torchvision import transforms
 from tqdm import tqdm
 import math
 
-""" Inspiré de https://github.com/awjuliani/pytorch-diffusion.git"""
-
-""" GLOBALES """
+# GLOBALS
 device = torch.device("cuda")
 diffusion_steps = 1000
-max_epoch = 20
+max_epoch = 1000
 n_hold_final = 10
 
 
@@ -276,7 +274,7 @@ def main():
     clamped_samples = (gen_samples.clamp(-1, 1) + 1) / 2
     for i in range(29):
         for j in range(9):
-            save_image(clamped_samples[i, j].permute(2,0,1).cpu(), f"images/sample{j}_time{i}.png")
+            save_image(clamped_samples[i, j].permute(2, 0, 1).cpu(), f"images/sample{j}_time{i}.png")
 
 
 if __name__ == "__main__":
