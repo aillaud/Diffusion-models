@@ -1,0 +1,1987 @@
+\documentclass{article}
+\usepackage[french]{babel}
+\frenchbsetup{StandardLists=true}
+\usepackage[a4paper,top=2cm,bottom=2cm,left=2cm,right=2cm,marginparwidth=1.75cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{mathtools}
+\usepackage{amsmath,amsfonts,amssymb}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{xfrac}
+\usepackage{enumitem}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks,
+    linkcolor={blue!50!black},
+    citecolor={blue!50!black},
+    urlcolor={blue!80!black}
+}
+\usepackage{lastpage}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{fancyhdr}
+\usepackage{changepage} % Pour adjustwidth
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{csquotes}
+\usepackage{todonotes}
+\usepackage{verbatim}
+\usepackage{pythonhighlight}
+\usepackage{setspace}
+\usepackage[makeroom]{cancel}
+\usepackage{inconsolata}
+\usepackage{tabularray}
+\usepackage[indent]{parskip}
+
+\title{Projet Fil Rouge \\  Modèles de diffusion pour l'analyse de matériaux}
+\author{Arnaud Aillaud\\ \texttt{arnaud.aillaud@telecom-paris.fr}
+\And Clément Bourtguize-Ramel\\ \texttt{bourtguize-ramel@telecom-paris.fr}
+\AND Pierre-Antoine Clouzeau\\ \texttt{clouzeau@telecom-paris.fr}
+\And Hippolyte Sibileau\\ \texttt{hippolyte.sibileau@telecom-paris.fr}
+\AND Nacim Belkhir\\  Tuteur Entreprise\\ Safran\\ \texttt{nacim.belkhir@safrangroup.com} 
+\And Arturo Mendoza Quispe\\  Tuteur Entreprise\\ Safran\\ \texttt{arturo.mendoza-quispe@safrangroup.com}
+\And Gianni Franchi\\ Tuteur Académique\\ ENSTA Paris\\ \texttt{gianni.franchi@ensta-paris.fr} }
+
+\pagestyle{fancy}
+\fancyhf{}
+\setlength{\headheight}{12.2pt}
+\fancyhead[L]{\textit{ \nouppercase{Modèles de diffusion pour l'analyse de matériaux}}}
+\fancyhead[R]{\textit{ \nouppercase{\leftmark}}}
+\fancyfoot[C]{\thepage / \pageref*{LastPage}}
+\fancypagestyle{plain}{
+    \fancyhf{}
+    \fancyfoot[C]{\thepage / \pageref*{LastPage}}
+    \renewcommand{\headrulewidth}{0pt}
+    \renewcommand{\footrulewidth}{0pt}
+}
+
+\makeatletter
+% rules for title box at top of first page
+\newcommand{\@toptitlebar}{
+  \hrule height 4\p@
+  \vskip 0.25in
+  \vskip -\parskip%
+}
+\newcommand{\@bottomtitlebar}{
+  \vskip 0.29in
+  \vskip -\parskip
+  \hrule height 1\p@
+  \vskip 0.09in%
+}
+
+\providecommand{\@maketitle}{}
+\renewcommand{\@maketitle}{%
+  \vbox{%
+    \hsize\textwidth
+    \linewidth\hsize
+    \vskip 0.1in
+    \@toptitlebar
+    \centering
+    {\LARGE\bf \@title\par}
+    \@bottomtitlebar
+  \def\And{%
+    \end{tabular}\hfil\linebreak[0]\hfil%
+    \begin{tabular}[t]{c}\bf\rule{\z@}{24\p@}\ignorespaces%
+  }
+  \def\AND{%
+    \end{tabular}\hfil\linebreak[4]\hfil%
+    \begin{tabular}[t]{c}\bf\rule{\z@}{24\p@}\ignorespaces%
+  }
+  \begin{tabular}[t]{c}\bf\rule{\z@}{24\p@}\@author\end{tabular}%
+    \vskip 0.3in \@minus 0.1in
+  }
+}
+
+\setlength {\marginparwidth }{2cm}
+
+\usepackage[backend=biber,sorting=none]{biblatex}
+\addbibresource{biblio.bib}
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Your abstract.
+\end{abstract}
+
+\tableofcontents
+\pagebreak
+
+\section{Introduction}
+
+Lors du développement d'une pièce, du fait du contexte industriel particulier de Safran, les chercheurs sont tenus de caractériser pleinement l'impact de leurs processus de fabrication sur la qualité des pièces. Bien qu'impérative, cette exigence doit être atteinte en composant avec les coûts de réalisation des expériences. Dans ce contexte, la division I.A. de Safran entraîne des modèles génératifs afin de fournir aux chercheurs un outils d'aide à l'exploration de l'espace expérimental. Ces modèles permettent ainsi de générer des données correspondantes à des zones de l'espace expérimental qui n'auraient pas pu être explorées, car trop coûteuses et/ou difficilement atteignables techniquement. Ils permettent également d'effectuer un maillage plus fin de certaines zones ou encore de constituer une aide à la décision des zones à explorer en laboratoire. Enfin, lors d'un résultat expérimental, ces outils permettent de mieux en étudier la configuration expérimentale.
+
+Les équipes de Safran sont donc intéressées par une étude de l'état de l'art des modèles génératifs, tout particulièrement des modèles de diffusion qui commencent à s'imposer en tant que potentiels successeurs des GANs, et de leur utilisation dans un contexte industriel (type d'images spécifiques / non présents dans les jeux de données classiques sur lesquels les gros modèles sont entraînés, nombre d'images limité, ressources de calcul modérées, etc.).
+
+Notre approche pour ce projet a donc d'abord consisté en une analyse des grandes familles de modèles génératifs (VAE, VQ VAE, GANs) pour se familiariser avec les méthodes génératives, en comprendre les forces et limites, mais aussi pour 
+commencer avec des modèles plus simples pour nos premières implémentations de modèles de Deep Learning avec Pytorch. Lors de cette première phase, nous avons validé l'implémentation de nos modèles avec des jeux de données classiques de traitement d'images (datatsets simples, de petite taille, permettant d'obtenir des résultats et d'itérer rapidement) :
+\begin{itemize}
+    \item \textbf{MNIST} (Modified National Institute of Standards and Technology database) \cite{MNIST}\\
+    Il s'agit d'une collection de chiffres manuscrits en noir et blanc, qui comporte 60 000 images d'entraînement et 10 000 images de test. Les images sont de petite dimension (28 x 28 pixels)
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=15cm]{Images/MNIST.pdf}
+        \caption{Exemple d'images extraites du dataset MNIST}
+    \end{figure}
+    \item \textbf{CIFAR-10} (Canadian Institute for Advanced Research, 10 classes) \cite{CIFAR10}\\
+    Il s'agit d'un jeu de données contenant 60 000 images couleur de petite taille (32 x 32  pixels) réparties selon 10 classes : avion, automobile, oiseau, chat, cerf, chien, grenouille, cheval, bateau et camion
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=15cm]{Images/CIFAR10.pdf}
+        \caption{Exemple d'images extraites du dataset CIFAR-10}
+    \end{figure}
+\end{itemize}
+
+Après ce premier état de l'art, nous nous sommes focalisés sur l'étude du premier article à obtenir de bons résultats de génération d'images avec un modèle de diffusion. Nous avons analysé le cadre théorique de cet article, et en avons implémenté une version en Pytorch. Nous avons généré des images à partir du dataset CIFAR-10, présenté ci-dessus, et \textbf{DTD} (Describable Textures Dataset) \cite{DTD}, un dataset contenant 5639 images de texture de tailles variables entre 300 x 300 pixels et 640 x 640 pixels, réparties selon 47 classes : banded, braided, bubbly, cobwebbed, chequered, cracked, dotted, honeycombed, wrinkled, etc. Les matérieux sur lesquels les équipes Safran travaillent étant des tressages de fibres de carbones, l'utilisation d'un dataset de texture nous permettait de nous rapprocher du contexte entreprise.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=17cm]{Images/DTD.pdf}
+    \caption{Exemple d'images extraites du dataset DTD}
+\end{figure}
+
+\noindent \begin{minipage}{0.73\textwidth}
+\setlength{\parindent}{1.5em}
+Dans une dernière phase, après avoir maîtrisé l'utilisation de modèles de diffusion avec conditionnement, nous avons comparé différentes méthodes d'entraînement plus efficaces sur un jeu de données interne fourni par Safran.
+
+\begin{minipage}{0.3\textwidth}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=2.5cm]{Images/3D_image.pdf}
+        \caption{Exemple de tissage 3D des fibres}
+    \end{figure}
+\end{minipage}
+\begin{minipage}{0.02\textwidth}
+\hfill
+\end{minipage}
+\begin{minipage}{0.68\textwidth}
+ Les équipes qui nous encadrent pour ce projet travaillent notamment sur les aubes de réacteurs d'avions \href{https://fr.wikipedia.org/wiki/CFM_International_LEAP}{de type LEAP} (figure \ref{fan_blade}) fabriquées via un processus innovant impliquant le tissage 3D de fibres carbones composites. Le tissage de ces fibres en 3 dimensions est assez complexe et implique différents types de fibres, notamment chaîne (\textit{warp} en anglais) et trame (\textit{weft} en anglais).
+\end{minipage}
+
+\end{minipage}
+\begin{minipage}{0.02\textwidth}
+\end{minipage}
+\begin{minipage}{0.3\textwidth}
+\vspace{-0.5cm}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=2.5cm]{Images/fan_blade.pdf}
+    \caption{Exemple d'aube de réacteur produite par Safran}
+    \label{fan_blade}
+\end{figure}
+\end{minipage}
+
+\vspace{0.3cm}
+
+\begin{minipage}{0.5\textwidth}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=8cm]{Images/fabrication_process.pdf}
+    \caption{Processus de fabrication d'une aube}
+\end{figure}
+\end{minipage}
+\begin{minipage}{0.02\textwidth}
+\hfill
+\end{minipage}
+\begin{minipage}{0.48\textwidth}
+Le tissage constitue la première des 7 étapes principales nécessaires pour créer une aube via moulage par transfert de résine : 
+\begin{enumerate}
+    \item Préparation du textile
+    \item Mise en forme
+    \item Fermeture du moule (compression)
+    \item Injection et cuisson de la résine
+    \item Démoulage de la pièce durcie
+    \item Traitement final
+    \item Optimisation du moule
+\end{enumerate}
+Pour contrôler la qualité des pièces au cours de la fabrication, une analyse par tomographie 3D des pièces est effectuée à 3 moments cruciaux du processus : avant insertion dans le moule (ce qui donne des images de type \textit{dry}), après compression des fibres dans le moule (images de type \textit{dry-compacted}) et en sortie du moule après injection et durcissement de la résine (images de type \textit{injected}).
+\end{minipage}
+
+\vspace{0.3cm}
+
+Les images obtenues sont en 3 dimensions (hauteur, largeur et profondeur). Pour une même pièce, en fonction de la coupe 2D effectuée, il est donc possible d'observer la \textit{thickness}, \textit{warp} ou \textit{weft} du matériau (cf. figure \ref{3D_dry}). Trois images 3D au format \texttt{tif} nous ont été fournies : une de type \textbf{dry} de profondeur 359, une de type \textbf{dry-compacted} de profondeur 197 et une de type \textbf{injected} de profondeur 287, ainsi qu'un script permettant de récupérer chacune des coupes 2D constituant ces images. Au total, nous avons donc travaillé avec :
+\begin{itemize}
+    \item 2031 images \textbf{dry} dont
+    \begin{itemize}
+        \item 359 images de \textit{thickness} (résolution 702 x 970)
+        \item 702 images de \textit{warp} (résolution 970 x 359)
+        \item 970 images de \textit{weft} (résolution 702 x 359)
+    \end{itemize}
+    \item 1833 images \textbf{dry-compacted} dont
+    \begin{itemize}
+        \item 197 images de \textit{thickness} (résolution 863 x 773)
+        \item 863 images de \textit{warp} (résolution 773 x 197)
+        \item 773 images de \textit{weft} (résolution 863 x 197)
+    \end{itemize}
+    \item 1621 images \textbf{injected} dont
+    \begin{itemize}
+        \item 287 images de \textit{thickness} (résolution 701 x 633)
+        \item 701 images de \textit{warp} (résolution 633 x 287)
+        \item 633 images de \textit{weft} (résolution 701 x 287)
+    \end{itemize}
+\end{itemize}
+
+
+\begin{minipage}{0.45\textwidth}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=5.5cm]{Images/3D_dry.pdf}
+    \caption{Coupes 2D d'une image \textit{dry} du dataset Safran}
+    \label{3D_dry}
+\end{figure}
+\end{minipage}
+\begin{minipage}{0.02\textwidth}
+\hfill
+\end{minipage}
+\begin{minipage}{0.5\textwidth}
+    \begin{table}[H]
+        \centering
+        \begin{tblr}{
+        colspec={X[c]X[c]X[c]X[-1,c]},
+        rowhead = 1,
+        row{1} = {font=\bfseries}
+        }
+        thickness & warp & weft & Type \\
+        \begin{minipage}{2cm}\includegraphics[width=2cm]{Images/dry_thickness.pdf}\end{minipage}
+        & \begin{minipage}{2cm}\includegraphics[width=2cm]{Images/dry_warp.pdf}\end{minipage}
+        & \begin{minipage}{2cm}\includegraphics[width=2cm]{Images/dry_weft.pdf}\end{minipage}
+        & \textbf{dry} \\
+        \begin{minipage}{2cm}\includegraphics[width=2cm]{Images/dry-compacted_thickness.pdf}\end{minipage}
+        & \begin{minipage}{2cm}\includegraphics[width=2cm]{Images/dry-compacted_warp.pdf}\end{minipage}
+        & \begin{minipage}{2cm}\includegraphics[width=2cm]{Images/dry-compacted_weft.pdf}\end{minipage} 
+        & \textbf{dry-compacted} \\
+        \begin{minipage}{2cm}\includegraphics[width=2cm]{Images/injected_thickness.pdf}\end{minipage}
+        & \begin{minipage}{2cm}\includegraphics[width=2cm]{Images/injected_warp.pdf}\end{minipage}
+        & \begin{minipage}{2cm}\includegraphics[width=2cm]{Images/injected_weft.pdf}\end{minipage}
+        & \textbf{injected}\\
+        \end{tblr}
+        \caption{Exemple des 9 types d'images composant le dataset Safran}
+        \label{dataset_Safran}
+    \end{table}
+\end{minipage}
+
+\vspace{0.3cm}
+
+L'ensemble de nos résultats et analyses sont détaillés dans le présent rapport. Le code que nous avons utilisé lors de nos implémentations est disponible sur le dépôt GitHub suivant : \url{https://github.com/Pnyaa/Diffusion-models}.
+
+
+\clearpage
+\section{État de l'art des modèles génératifs}
+
+Il existe deux grandes catégories de modèles génératifs en vision par ordinateur :
+\begin{itemize}
+    \item Modèles génératifs explicites, basés sur la vraisemblance, qui apprennent la distribution d'un jeu de données avant de pouvoir générer de nouveaux exemples, tels que les modèles à énergie, auto-encodeurs variationnels, flux normalisants et modèles autorégressifs
+    \item Modèles génératifs implicites, tels que les GANs, qui apprennent à générer de nouvelles données sans être directement exposés à la distribution initiale des données, et retiennent implicitement des informations sur cette distribution lors de cet apprentissage
+\end{itemize}
+Les architectures les plus récentes de modèles génératifs combinent ces différents modèles. Nous allons donc brièvement expliquer ces modèles avant de présenter les architectures de modèles à l'état de l'art.
+
+\subsection{Autoencodeurs}
+Bien que les autoencodeurs classiques ne fassent pas réellement partie de la famille des modèles génératifs, leur architecture sert de base à certains d'entre eux. Elle est donc brièvement introduite afin de mieux présenter ses dérivations. 
+\subsubsection{Architecture classique}
+
+L'objectif poursuivit par les autoencodeurs classiques est la réduction de dimensions (\cite{AEORG}). Pour obtenir une bonne représentation réduite des données, la stratégie est d'entraîner conjointement deux Multi Layer Perceptron (MLP) : un encodeur qui produit une représentation de dimension réduite et un décodeur qui reconstruit les données à partir de cette représentation. La sortie du décodeur peut ainsi être comparée à l'entrée de l'encodeur, et le réseau entraîné à en minimiser la différence. Un schéma de cette architecture est présenté dans la figure \ref{AEARCH}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=15cm]{Images/autoencoder-architecture.pdf}
+    \caption{Architecture générique d'un autoencodeur \cite{weng2018VAE}}
+    \label{AEARCH}
+\end{figure}
+
+\subsubsection{Variational Autoencoders (VAE)}
+
+Les VAE (\cite{VAE}) s'introduisent dans un contexte de maximisation de vraisemblance dans le cadre de modèles à variables cachées. On fait donc l'hypothèse que les données dont on dispose ont été générées en deux temps : une première valeur d'une variable aléatoire de distribution $p_{\theta}(\textbf{z})$ à été tirée puis utilisée pour échantillonner une distribution $p_{\theta}(\textbf{x}|\textbf{z})$. On cherche donc à maximiser la log-vraisemblance : 
+$$   log(p_{\theta}(\textbf{x}^{(1)},..,\textbf{x}^{(N)}))=\sum_{i=1}^{N}log(p_{\theta}(\textbf{x}^{(i)})) $$
+Les auteurs de \cite{VAE} se placent dans une situation où ni $p_{\theta}(\textbf{x})$, ni $p_{\theta}(\textbf{z}|\textbf{x})$ ne sont calculables. On ne  peut donc pas maximiser directement cette vraisemblance, ni faire appel à l'algorithme EM (\cite{EM}). On introduit une fonction d'approximation de $p_{\theta}(\textbf{z}|\textbf{x})$ : $q_{\phi}(\textbf{z}|\textbf{x})$. On peut montrer (\cite{weng2018VAE}) la relation suivante :
+$$   log(p_{\theta}(\textbf{x}^{(i)}))=D_{KL}(q_{\phi}(\textbf{z}|\textbf{x}^{(i)})||p_{\theta}(\textbf{z}|\textbf{x}^{(i)}))+\mathcal{L}(\theta,\phi,\textbf{x}^{(i)})) $$
+Le premier terme du membre de droite est la divergence de Kullback-Leibler(\cite{DKL}), c'est une mesure de dissimilitude entre deux distributions. D'après \href{https://fr.wikipedia.org/wiki/In%C3%A9galit%C3%A9_de_Gibbs}{l'inégalité de Gibbs}, cette mesure est toujours positive et ne s'annule que lors d'égalité entre les deux distributions. Cette observation permet d'écrire l'inégalité suivante et de s'affranchir du terme $p_{\theta}(\textbf{z}|\textbf{x})$:
+$$ log(p_{\theta}(\textbf{x}^{(i)})) \geq \mathcal{L}(\theta,\phi,\textbf{x}^{(i)})) $$
+De cette inégalité, on tire le nom du membre de droite de l'équation : variational lower bound. On donne l'expression de ce terme ci-dessous:
+$$    \mathcal{L}(\theta,\phi,\textbf{x}^{(i)})=-D_{KL}(q_{\phi}(\textbf{z}|\textbf{x}^{(i)})||p_{\theta}(\textbf{z}))+\mathbb{E}_{q_{\phi}(\textbf{z}|\textbf{x}^{(i)})}[log(p_{\theta}(\textbf{x}^{(i)}|\textbf{z}))] $$ 
+ Pour ce qui est du premier terme, les auteurs de \cite{VAE} choisissent $p_{\theta}(\textbf{z})\sim \mathcal{N}(0,\textbf{I})$ et $q_{\phi}(\textbf{z}|\textbf{x}^{(i)})\sim \mathcal{N}(\boldsymbol{\mu}^{i},\boldsymbol{(\sigma^{i})^{2}}\textbf{I})$. Ce choix permet d'obtenir une expression analytique de la divergence KL : 
+$$  \mathcal{L}(\theta,\phi,\textbf{x}^{(i)})=\frac{1}{2}\sum_{j=1}^{J}(1+log(\sigma^{(i)}_{j})^{2}-(\mu_{j}^{(i)})^{2}-(\sigma_{j}^{(i)})^{2})+\mathbb{E}_{q_{\phi}(\textbf{z}|\textbf{x}^{(i)})}[log(p_{\theta}(\textbf{x}^{(i)}|\textbf{z}))] $$
+\noindent où $j$ est la dimension de \textbf{z}. Pour ce qui est du deuxième terme, les auteurs suggèrent de l'estimer par la méthode de Monte Carlo. L'échantillonnage se fait à partir de $q_{\phi}(\textbf{z}|\textbf{x}^{(i)})=\boldsymbol{\mu}^{(i)}+\boldsymbol{\sigma}^{(i)}\odot\boldsymbol{\epsilon}$ avec $\boldsymbol{\epsilon}\sim\mathcal{N}(0,\boldsymbol{I})$. On obtient donc, pour $L$ échantillons Monte Carlo.
+\begin{equation}
+   \mathcal{L}(\theta,\phi,\textbf{x}^{(i)})=\frac{1}{2}\sum_{j=1}^{J}(1+log(\sigma^{(i)}_{j})^{2}-(\mu_{j}^{(i)})^{2}-(\sigma_{j}^{(i)})^{2})+
+    \frac{1}{L}\sum_{l=1}^{L}log(p_{\theta}(\boldsymbol{x}^{(i)}|\boldsymbol{z}^{(i,l)}))
+    \label{prefin}
+\end{equation}
+Les valeurs de moyenne et d'écart-type de $q_{\phi}(\textbf{z}|\textbf{x}^{(i)})$ sont prises comme sorties d'un réseau MLP. Pour ce qui est du deuxième terme, on ne le maximise pas tel quel. Une fois l'échantillonnage effectué, on entraîne un deuxième réseau MLP à reconstruire la donnée d'entrée à partir des valeurs $\boldsymbol{z}^{(i,l)}$. Entraîner un réseau à reconstruire la donnée d'entrée revient à maximiser la probabilité d'obtenir cette même image en sortie de ce même réseau sans pour autant travailler explicitement avec la fonction de densité $p_{\theta}(\boldsymbol{x}^{(i)}|\boldsymbol{z}^{(i,l)})$. On peut donc remplacer le terme de Monte Carlo dans \ref{prefin} par un terme de binary cross entropy entre l'image d'entrée et l'image de sortie. On obtient ainsi la fonction de coût finale d'un VAE : 
+\begin{equation}
+   \mathcal{L}(\theta,\phi,\textbf{x}^{(i)}))=\frac{1}{2}\sum_{j=1}^{J}(1+log(\sigma^{(i)}_{j})^{2}-(\mu_{j}^{(i)})^{2}-(\sigma_{j}^{(i)})^{2})+
+    \sum_{i=1}^{D}x_{i}log(y_{i})+(1-x_{i})log(1-y_{i})
+    \label{lossVAE}
+\end{equation}
+\noindent où D est la dimension des données, $\boldsymbol{y}$ est la sortie du réseau et $\boldsymbol{x}$ la donnée en entrée. On peut à présent comparer ce réseau à un auto-encodeur dans le sens suivant : les données d'entrée sont représentées par des objets de dimension plus petite (les paramètres des distributions gaussiennes). Ces objets sont obtenus comme sortie d'un réseau MLP qui joue un rôle similaire à l'encodeur. De même, on entraîne également un autre réseau à reconstruire les données d'entrée, lui faisant jouer un rôle similaire au décodeur. On présente un schéma de cette architecture dans la figure \ref{schemaVAE}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=15cm]{Images/vae-gaussian.pdf}
+    \caption{Architecture d'un VAE \cite{weng2018VAE}}
+    \label{schemaVAE}
+\end{figure}
+
+On implémente ce modèle pour l'entraîner sur le jeu de données MNIST. Pour l'encodeur, on fait le choix d'une couche cachée à 400 noeuds, suivie d'une fonction ReLU puis de deux couches à 20 noeuds qui donnent les vecteurs de moyenne et d'écart-type des gaussiennes. Enfin, pour le décodeur, on choisit également une couche cachée à 400 noeuds suivie d'une fonction d'activation ReLU. On termine le décodeur par une couche à 784 noeuds suivie d'une fonction d'activation sigmoïde. L'évolution de la fonction de coût \ref{lossVAE} lors de l'entraînement est présentée dans la figure \ref{entt}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=5cm]{Results/trainVAE.pdf}
+    \caption{Evolution de la fonction de coût \ref{lossVAE} en fonction du nombre d'épochs}
+    \label{entt}
+\end{figure}
+
+Une fois le modèle entraîné, on peut comparer les images d'origine et celles reconstruites par le modèle visuellement. La figure \ref{comp} présente un exemple de comparaison. 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=5cm]{Results/ex_gen_VAE.pdf}
+    \caption{Comparaison entre une même image en entrée et en sortie du VAE}
+    \label{comp}
+\end{figure}
+On s'intéresse finalement à la répartition des moyennes des vecteurs gaussiens grâce à une représentation t-SNE présentée dans la figure \ref{tsne}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=6cm]{Results/tsnerep_latentspace.pdf}
+    \caption{Représentation t-SNE des vecteurs moyennes des gaussiennes avec coloration en fonction du label}
+    \label{tsne}
+\end{figure}
+
+Comme on peut le voir dans la figure \ref{tsne}, les $\boldsymbol{\mu}^{(i)}$ appris lors de la phase d'entraînement forment des clusters en fonction de la classe de la donnée d'entrée correspondante.
+\begin{comment}
+
+\subsubsection{Architecture classique}
+
+Il s'agit d'un modèle dont le but est d'apprendre une fonction identité, i.e. reconstruire à l'identique une image fournie en entrée, de manière non supervisée. Il est composé de deux réseaux de neurones :
+\begin{itemize}
+    \item Un encodeur, chargé d'encoder l'information initiale dans un espace de taille réduite, communément appelé "bottleneck", espace latent, espace de plongement? ou "z", compressant ainsi l'information
+    \item Un décodeur, chargé de reconstruire l'image initiale à partir de sa représentation compressée
+\end{itemize}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=15cm]{Images/autoencoder-architecture.png}
+    \caption{Architecture générique d'un autoencodeur \cite{weng2018VAE}}
+\end{figure}
+
+Le principal intérêt d'un autoencodeur ne réside donc pas dans sa capacité de génération d'images, mais dans sa capacité de réduction de dimension (non linéaire, contrairement à PCA). L'idée est de réussir à représenter les données d'entrée sur la couche latente de plus la petite taille permettant de restaurer l'image initiale : il y a toujours un compromis à trouver entre niveau de compression et qualité de l'image de sortie. \\
+Les avantages d'obtenir une représentation compressée sont multiples :
+\begin{itemize}
+    \item Utilisation de la couche latente comme donnée d'entrée d'un réseau de neurones, réduisant la dimensions des données et donc le temps de calcul / la puissance de calcul / la mémoire nécessaires à l'entraînement
+    \item Mitige le problème du "fléau de la dimension"
+    \item Mitige les problèmes d'overfitting liés à la dispertion des données en grande dimension (data sparsity)
+\end{itemize}
+Différentes architectures d'autoencodeurs existent afin de s'assurer que le modèle apprend bien des attributs sous-jacents des données, et ne se contente pas de mémoriser les données d'entraînement de manière efficace : Denoising Autoencoder, Sparse Autoencoder, Contractive Autoencoder, etc.
+
+
+
+
+\subsubsection{Variational Autoencoders (VAE)}
+
+A la différence d'un autoencodeur classique, dans un Variational AutoEncoder (VAE), l'entrée n'est pas associée à un vecteur fixe/déterministe dans la couche latente, mais à une distribution, généralement une gaussienne. Dans le cas d'une distribution gaussienne, deux paramètres sont suffisants pour caractériser la distribution : moyenne $\mu$ et écart-type $\sigma$, comme représenté ci-dessous.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=15cm]{Images/vae-gaussian.pdf}
+    \caption{Architecture simplifiée d'un VAE}
+    \label{fig:archi_vae}
+\end{figure}
+
+Une moyenne et un écart-type sont appris pour chaque composante du vecteur $z$ de la couche latente, le vecteur $z$ est généré en échantillonant les composantes à partir des distibutions apprises. En pratique, le vecteur de la couche latente est échantilloné à partir d'une distribution gaussienne centrée et d'écart-type 1 ($\epsilon \sim \mathcal{N}(0,\mathcal{I})$), échantillon ensuite multiplié par $\sigma$ et auquel est ajouté $\mu$. Ceci permet de découpler les variables d'apprentissage de tout élément stochastique, et ainsi de réaliser la rétropropagation sur l'ensemble du réseau de neurones (\textit{reparametrization trick}). \\
+Pour une même image présentée plusieurs fois en entrée, la valeur du vecteur de la couche latente sera donc légèrement différente en fonction de l'échantillonnage effectué, comme illustré ci-dessous.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=15cm]{Images/VAE_example.png}
+    \caption{Échantillonnage dans la couche latente d'un VAE \cite{JJVAE}}
+\end{figure}
+En sortie du décodeur, les images générées à partir d'une même image seront donc également légèrement différentes, tout en restant très proches de l'image initiale. Il est ainsi très facile de générer de nouvelles images grâce à un VAE à partir d'un vecteur de dimension égale au bottleneck du réseau. De plus, tant que la distance de chaque coordonnée est proche d'une moyenne apprise pour cette coordonnée ($\sim$ inférieure à 3 $\times\ \sigma$), l'image générée sera très fidèle à la distribution d'apprentissage (contrairement à l'autoencodeur classique qui risque de générer une image très "bruitée"), ce qui fait des VAE un modèle réellement génératif. \\
+Plus formellement, ce compromis entre proximité de la distribution d'entraînement et capacité générative du modèle est visible dans la fonction de perte $\mathcal{L}$ utilisée pour entraîner le modèle. En reprenant les notations de la figure \ref{fig:archi_vae}, elle peut s'écrire sous cette forme :
+$$\mathcal{L} = -\underbrace{\mathbb{E}_{z \sim q_\Phi(z|x)}[log(p_\theta(x|z))]}_{\substack{\text{Terme 1 : Espérance de la log vraisemblance d'une} \\ \text{image décodée par rapport à la distribution initiale}}} + \underbrace{D_{KL}(q_\Phi(z|x)||p_\theta(z))}_{\substack{\text{Terme 2 : Divergence de Kullback–Leibler entre les distributions} \\ \text{postérieures estimée et réelle (optimisation des paramètres $\mu$ et $\sigma$)}}}$$\\
+Minimiser la fonction de perte $\mathcal{L}$ revient donc simultanément à :
+\begin{itemize}
+    \item Maximiser le 1\textsuperscript{er} terme, i.e. maximiser la vraisemblance du décodeur, donc la capacité à recréer une image réelle à partir d'un vecteur latent ($\sim$ réduit l'écart-type appris vers 0, ce qui rapproche l'espace latent appris d'une distribution déterministe, type autoencodeur classique)
+    \item Minimiser le 2\textsuperscript{nd} terme, i.e. minimiser l'écart entre la distribution apprise par le décodeur et celle générée par l'encodeur, i.e. optimiser les paramètres des distributions gaussiennes de l'encodeur pour que les échantillons tirés puissent générer des images proches des images réelles.
+\end{itemize}
+
+En entraînant un autoencodeur avec une dimension de vecteur latente de 2, il est possible de visualiser l'espace latent appris. La figure suivante illustre l'espace latent en 2D pour un autoencodeur et un VAE entraîné sur les données MNIST (10 classes correspondant au 10 digits 0 à 9 écrits manuellement).
+
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \captionsetup{width=.9\linewidth}
+  \includegraphics[width=.98\linewidth]{Images/Latent_space_AE.png}
+  \caption{Espace latent 2D d'un autoencodeur : les points représentent les coordonnées des vecteurs latents appris}
+\end{subfigure}%
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \captionsetup{width=.8\linewidth}
+  \includegraphics[width=.95\linewidth]{Images/Latent_space_VAE.png}
+  \caption{Espace latent 2D d'un VAE : les points représentent les coordonnées des moyennes apprises}
+\end{subfigure}
+\caption{Comparaison entre l'espace latent d'un autoencodeur standard et d'un VAE sur les données MNIST}
+\end{figure}
+
+Avec un autoencodeur standard comme avec un VAE, les moyennes apprisent (et donc les valeurs des vecteurs latents échantillonnés) sont regroupés par classe. Avec le VAE, on remarque que les représentations sont regroupées de manière très dense autour de l'origine de l'espace latent, il n'y a pas de grandes zones de vide séparant les différentes classes. Ainsi, tout point échantillonné autour de l'origine produira une image correcte : le modèle est beaucoup plus résilient au bruit dans l'espace latent.
+\end{comment}
+
+\subsubsection{Vector-Quantised VAE (VQ-VAE)}
+
+Tout comme un VAE, un VQ-VAE est un modèle de deep learning avec un encoder et un decoder. Il possède également un Vector Quantisation Layer (VQL), qui lui permet d'interagir avec un dictionnaire d'embedding (un codebook). La principale différence entre un VAE et un VQ-VAE est que le VAE utilise un espace latent continu tandis que le VQ-VAE utilise un espace latent discret grâce à un dictionnaire d'embedding, ce qui permet d'obtenir des résultats souvent moins irréalistes, et des reconstructions plus proches de la réalité, notamment sur des images. 
+
+L'encoder prend en entrée une image de taille $(n, h, w, d)$ et retourne un encoding de cette image ($z_e$, de même taille). 
+Le codebook est un dictionnaire de $k$ vecteurs à $d$ dimensions initialisé grâce à une loi uniforme sur $[-1/k, 1/k]$. 
+La première étape dans le VQL est de reformater $z_e$ pour obtenir une matrice de taille $(n*h*w, d)$. On peut ensuite calculer les distances (euclidiennes) entre chaque vecteur de $z_e$ et les $e_k$, éléments du codebook. On détermine alors pour chacun des éléments de $z_e$ le vecteur le plus proche dans le codebook (argmin), et on renvoie les vecteurs correspondants dans $z_q$, qui sera donc de taille $(n*h*w, d)$. La dernière étape consiste à reformater $z_q$ pour retrouver une matrice de taille $(n,h,w,d)$. Toutes ces étapes sont résumées dans le schéma ci-dessous. 
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=17cm]{Images/VQ-VAE.pdf}
+    \caption{A gauche, schéma d'architecture d'un VQ-VAE / A droite, visualisation de l'espace d'embedding : la sortie du décodeur $z_q$ est associée au point le plus proche (e2). Le gradient, représenté en rouge, entraîne la sortie de l'encodeur vers une valeur discrète différente pour la prochaine passe \cite{Avd2017VQVAE} }
+\end{figure}
+
+Le principal problème de cette méthode est qu'on ne peut effectuer une backpropagation classique puisque la fonction argmin n'est pas différentiable. On se contente donc de transférer le gradient de la loss directement depuis la sortie du VQL ($z_q$) jusqu'à l'encoder ($z_e$) pour lui transférer de  l'information pour améliorer sa sortie lors du training (et minimiser l'erreur de reconstruction).
+\large
+$$L = \log(p(x|z_q(x))) +  \lVert\textbf{sg}[z_e(x)] - e \rVert_2^2 + \beta \lVert z_e(x)- \textbf{sg}[e]\rVert_2^2$$
+\normalsize
+
+
+La loss du VQ-VAE est composée de trois termes. Le premier terme est la reconstruction loss, elle est optimisée par l'encoder et le décodeur. Elle permet de voir la proximité entre l'image d'origine et l'image reconstruite. Vu qu'il n'y a pas de backpropagation, elle n'est pas utilisée pour optimiser le dictionnaire d'embedding.
+Le deuxième terme, ou la codebook loss, permet de pousser les vecteurs $e_k$ vers la sortie de l'encoder $z_e$. C'est ce qui permet de mettre à jour le codebook. L'expression "sg" signifie "stop gradient", qui permet de bloquer le calcul du gradient de ce qu'elle prend en argument dans le graphe de calcul. Ceci est dû à l'impossibilité de faire une backpropagation classique.  
+Le dernier terme permet à l'inverse de pousser les vecteurs $z_e$ vers les vecteurs du dictionnaire d'embedding. Le scalaire $\beta$ permet de ralentir l'optimisation de la sortie de l'encoder. $\beta$ prend 0.25 comme valeur par défaut, et il a été démontré que ce terme n'impacte pas vraiment le modèle quand il prend ses valeurs entre 0.1 et 2.
+Ci-dessous, voici un exemple de résultat de reconstruction que l'on peut obtenir avec un VQ-VAE à partir du dataset CIFAR10. Le modèle a été entraîné avec 5 000 epochs, et nous avons gardé la valeur par défaut de $\beta$, soit 0.25. On commence à pouvoir distinguer des formes similaires, mais plus d'epochs permettraient d'obtenir un meilleur résultat. 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=17cm]{Results/VQVAE_ex.pdf}
+    \caption{Exemple d'images reconstruites avec un VQ-VAE}
+\end{figure}
+
+
+\subsection{Generative adversarial network}
+\subsubsection{Vanilla GAN}
+
+Contrairement aux modèles précédents, un modèle Generative adversarial network (GAN) apprend à générer des images sans être exposé à la distribution initiale, et n'est donc pas basé sur la log-vraisemblance. \\
+L'architecture d'un GAN est composée de 2 blocs
+\begin{itemize}
+    \item Un \textbf{discriminateur}, qui est optimisé pour classifier les images qu'il reçoit en entrée. Les images de la distribution réelle doivent être associées au label 0, celles générées par le générateur au label 1.
+    \item Un \textbf{générateur}, qui génère des images ressemblant à la distribution initiale à partir d'un espace latent. Son objectif est de créer les images les plus similaires à la distribution initiale pour tromper le discriminateur
+\end{itemize}
+
+Le schéma suivant représente cette architecture simplifiée :
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=15cm]{Images/Archi_GAN.pdf}
+    \caption{Architecture simplifiée d'un GAN}
+\end{figure}
+
+Par la suite, les notations suivantes seront utilisées pour décrire les différentes distributions :
+\begin{itemize}
+    \item $p_z$ distribution de données du bruit $z$ en entrée du générateur
+    \item $p_g$ distribution de données générées par le générateur, dont $x'$ est un échantillon
+    \item $p_r$ distribution de données réelles, dont $x$ est un échantillon
+\end{itemize}
+Le discriminateur est optimisé pour labelliser une image en 0 si elle est issue de $p_r$ et 1 si elle est générée par G, i.e. maximiser $\mathbb{E}_{x \sim p_r(x)}[\log(D(x))]$ et $\mathbb{E}_{z \sim p_z(z)}[\log(1 - D(G(z))]$. \\
+Le générateur est optimisé pour faire passer les images qu'il génère pour réelles, i.e. minimiser $\mathbb{E}_{z \sim p_z(z)}[\log(1 - D(G(z))]$. \\
+La fonction de perte $\mathcal{L}$ d'un GAN prend donc la forme suivante :
+\begin{align*}
+\mathcal{L}(G,D) &= \mathbb{E}_{x \sim p_r(x)}[\log(D(x))] + \mathbb{E}_{z \sim p_z(z)}[\log(1 - D(G(z))] \\
+&= \mathbb{E}_{x}[\log(D(x))] + \mathbb{E}_{x \sim p_g(x)}[\log(1 - D(x)]
+\end{align*}
+
+Elle porte le nom de \textbf{minimax loss}, car son optimisation force une minimisation et une maximisation de paramètres concurrents : $ \min_{G} \max_{D} \mathcal{L}(G,D) $.
+L'équation de la fonction de loss permet de l'écrire de manière analytique
+$$ \mathcal{L}(G,D) = \int_x (p_r(x) \log(D(x)) + p_g(x) \log(1-D(x)))dx$$
+On peut chercher $D(x)$ qui maximise cette équation en calculant pour quelles valeurs de $\tilde{x} = D(x)$ la fonction $f$ suivante s'annule.
+\begin{align*}
+    f(\tilde{x}) &= p_r(x)\log(\tilde{x}) + p_g(x)\log(1 - \tilde{x}) \\
+    \frac{\partial f}{\partial \tilde{x}} &= \frac{p_r(x)}{\ln(10) \tilde{x}} - \frac{p_g(x)}{\ln(10)(1-\tilde{x})} \\
+    &= \frac{p_r(x) - (p_r(x)+p_g(x))\tilde{x}}{\ln(10)\tilde{x}(1-\tilde{x})}
+\end{align*}
+Cette valeur s'annule pour
+$$p_r(x) - (p_r(x)+p_g(x))\tilde{x}^* = 0 \Leftrightarrow  \boxed{\tilde{x}^* = \frac{p_r(x)}{p_r(x)+p_g(x)}} \in [0,1]$$
+Lorsque le générateur est parfaitement entraîné, $p_g = p_r$ d'où $D^*(x) = \tilde{x}^* = \frac{1}{2}$
+L'équation de la loss prend alors la forme suivante :
+\begin{align*}
+\mathcal{L}(G,D^*) &= \int_x (p_g(x) \log(\frac{1}{2}) + p_r(x) \log(\frac{1}{2}))dx \\
+&= -\log(2) \int_x p_g(x)dx -\log(2) \int_x p_r(x)dx \\
+&= -2\log(2)
+\end{align*}
+La valeur minimale théorique de loss d'un GAN est donc de $-2\log(2)$. \\
+Cette valeur peut se retrouver en partant de l'équation de la divergence de Jensen-Shannon entre $p_r$ et $p_g$, à savoir
+\begin{align*}
+D_{\text{JS}}(p_r||p_g) &= \frac{1}{2} D_{\text{KL}}(p_r||\frac{p_r+p_g}{2}) + \frac{1}{2} D_{\text{KL}}(p_g||\frac{p_r+p_g}{2}) \\
+&= \frac{1}{2} (\log(2) + \int_x p_r(x) \log(\frac{p_r(x)}{p_r(x)+p_g(x)})dx + \log(2) + \int_x p_g(x) \log(\frac{p_g(x)}{p_r(x)+p_g(x)})dx \\
+&= \frac{1}{2}(\log(4) + \mathcal{L}(G, D^*)) \\
+\Leftrightarrow \mathcal{L}(G, D^*) &=  2 D_{\text{JS}}(p_r||p_g) - 2\log(2)
+\end{align*}
+La fonction de perte d'un GAN quantifie donc la similarité entre la distribution réelle des données et la distribution du générateur par divergence de Jensen Shannon \textbf{lorsque le discriminateur est optimal}.
+
+Malgré ce résultat, il n'y a aucune garantie de convergence pour un GAN, et donc aucune garantie d'atteindre un discriminateur optimal. Les problèmes liés à l'entraînement d'un GAN sont en réalité nombreux. Parmi les plus fréquents, on rencontre :
+\begin{itemize}
+    \item \underline{Divergence lors de l'entraînement}. En effet, la fonction de perte nécessite d'atteindre un \textbf{équilibre de Nash} pour espérer converger, ce qui est en pratique relativement compliqué avec l'implémentation standard d'un GAN
+    \item \underline{Évanescence du gradient}. En observant la loss du GAN, on remarque que lorsque le discriminateur est optimal, la fonction de perte s'annule. Il n'y a donc plus de mise à jour des paramètres de $G$, qui ne peut donc plus s'améliorer. Ainsi, si le discriminateur devient trop vite optimisé, l'entraînement est paralysé, mais s'il ne s'améliore pas assez, le génératuer n'a aucune incitation a produire des images de qualité. Ce dilemme rend l'entraînement d'un GAN complexe
+    \item \underline{Mode collapse}. Il arrive que lors de l'entraînement, le générateur trouve un type d'image qui trompe le discriminateur de manière systématique, il ne génère plus que ce type d'images. La diversité de la génération d'images est donc grandement affectée. Ce type de problème est nommé "Mode Collapse"
+    \item \underline{Absence de métrique d'évaluation objective}. La valeur de la fonction de perte d'un GAN n'est pas révélatrice de la qualité ni de la diversité des images générées, et le meilleur moyen de vérifier la qualité des images générées reste une observation humain. Il existe cependant certaines métrique d'évaluation qui permettent de mesurer la qualité et la diversité des images générées dans une moindre mesure. La plus populaire est la Distance d'Inception de Fréchet (FID en anglais), qui mesure l'écart entre moyennes et matrices de covariance de la distribution de données réelles et générées. Plus formellement, elle revient à calculer la distance de Fréchet à partir des estimateurs des moyennes et matrices de covariance des 2 distributions, calculées d'une part sur les images d'entraînement pour $p_r$ et sur un échantillon d'images générées pour $p_g$ (les auteurs de l'article \cite{fid} qui introduit cette métrique conseillent de générer au moins 10000 images pour estimer ces valeurs). Pour calculer ces valeurs, les représentations générées par le modèle Inception v3 \cite{inception} sont utilisées (2048 features), d'où son nom.
+    $$\text{FID} = \lVert\mu_r - \mu_g\rVert^2_2 + tr(\Sigma_r + \Sigma_g - 2(\Sigma_r \Sigma_g)^{\frac{1}{2}})$$
+    S'agissant de la distance entre distribution initiale et distribution générée, plus sa valeur est faible, plus les images générées seront fidèles à la distribution initiale.
+\end{itemize}
+
+Nous avons rencontré certains de ces problèmes en entraînant un GAN, avec un générateur et un discriminateur chacun composé de 4 couches de convolution, sur CIFAR-10. Les résultats sont présentés ci-dessous :
+
+\begin{minipage}{0.5\textwidth}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{Results/Train_GAN.pdf}
+    \caption{Courbes de FID et de pertes pendant l'entraînement d'un GAN sur CIFAR-10}
+\end{figure}
+\end{minipage}
+\begin{minipage}{0.01\textwidth}
+\hfill
+\end{minipage}
+\begin{minipage}{0.48\textwidth}
+    \begin{table}[H]
+        \centering
+        \begin{tblr}{
+        colspec={X[-1,c]X[c]},
+        rowhead = 1,
+        row{1} = {font=\bfseries},
+        rowsep = 1pt
+        }
+        Epoch & Échantillon d'images générées \\
+        0 & \begin{minipage}{\linewidth}\includegraphics[width=\linewidth]{Results/gan_0e.pdf}\end{minipage}\\
+        50 & \begin{minipage}{\linewidth}\includegraphics[width=\linewidth]{Results/gan_50e.pdf}\end{minipage}\\
+        100 & \begin{minipage}{\linewidth}\includegraphics[width=\linewidth]{Results/gan_100e.pdf}\end{minipage}\\
+        150 & \begin{minipage}{\linewidth}\includegraphics[width=\linewidth]{Results/gan_150e.pdf}\end{minipage}\\
+        200 & \begin{minipage}{\linewidth}\includegraphics[width=\linewidth]{Results/gan_200e.pdf}\end{minipage}\\
+        250 & \begin{minipage}{\linewidth}\includegraphics[width=\linewidth]{Results/gan_250e.pdf}\end{minipage}\\
+        300 & \begin{minipage}{\linewidth}\includegraphics[width=\linewidth]{Results/gan_300e.pdf}\end{minipage}\\
+        350 & \begin{minipage}{\linewidth}\includegraphics[width=\linewidth]{Results/gan_350e.pdf}\end{minipage}\\
+        \end{tblr}
+        \caption{Exemples d'images générées à différentes epochs}
+    \end{table}
+\end{minipage}
+
+Un premier constat est que la FID décroît jusqu'à atteindre un plateau entre les epochs 175 et 250, alors que la courbe de loss du générateur ne semble décroître que jusqu'à l'epoch 80, epoch à partir de laquelle elle se met à croître. Il y a donc bien décorrélation entre valeur de la fonction de perte et qualité des images générées. L'augmentation conjointe de la FID et de la valeur de la fonction de perte du générateur (avec une fonction de perte du discriminateur stagnante) à partir des epochs 300 est synonyme de divergence lors de l'entraînement : l'équilibrage de Nash n'est pas atteint. Poursuivre l'entraînement amène à un mode collapse : le générateur ne crée que des images semblables (en outre assez éloignées du dataset initial). \par
+\begin{figure}[htp]
+    \centering
+    \includegraphics[width=10cm]{Results/gan_collapse.pdf}
+    \caption{Mode collapse obervé à partir de 500 epochs d'entraînement}
+\end{figure}
+L'adéquation entre FID et qualité visuelle est par ailleurs confirmée par l'observation des images générée à chaque epoch. Les images les plus proches du dataset sont obtenues pour les epochs 150, 200 et 250 : on reconnaît quelques avions, voitures et animaux. Les images générées ne sont cependant pas très nettes, et bien qu'il y ait un clair progrès depuis l'epoch 0, les résultats ne semblent pas très satisfaisants pour un dataset d'entraînement a priori relativement simple.
+
+\subsubsection{WGAN}
+
+Pour réduire les problèmes de convergence décrits précédemment, Arjovsky et al. \cite{wgan} ont proposé une fonction de perte différente pour entraîner un GAN, basée sur la distance de Wasserstein.
+La fonction de perte prend la forme suivante, qui ne contient plus de logarithme (noter la suppression du $\min$, qui évite la concurrence entre maximisation et minimisation du Vanilla GAN) :
+$$ \mathcal{L}(p_r, p_g) = \max_{w \in W} \mathbb{E}_x[f_w(x)] - \mathbb{E}_z[f_w(g_{\theta}(z))]$$
+Quelques autres légères modifications de l'algorithme sont proposées, notamment l'entraînement du discriminateur plusieurs fois par epoch (par défaut, 5 fois plus que le générateur), et l'écrêtage des poids du modèles (weight clipping) dans l'intervalle [-0.01, 0.01]
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=12cm]{Images/WGAN_algorithm.pdf}
+    \caption{Algorithme du WGAN}
+\end{figure}
+
+Nous avons testé cette implémentation en conservant l'architecture du GAN précédent (4 couches de convolution pour le générateur et le discriminateur), et modifiant simplement l'objectif d'entraînement, toujours sur CIFAR-10. Les résultats obtenus sont présentés ci-dessous :
+
+\begin{minipage}{0.5\textwidth}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{Results/Train_WGAN.pdf}
+    \caption{Courbes de FID et de pertes pendant l'entraînement d'un WGAN sur CIFAR-10}
+\end{figure}
+\end{minipage}
+\begin{minipage}{0.01\textwidth}
+\hfill
+\end{minipage}
+\begin{minipage}{0.48\textwidth}
+    \begin{table}[H]
+        \centering
+        \begin{tblr}{
+        colspec={X[-1,c]X[c]},
+        rowhead = 1,
+        row{1} = {font=\bfseries},
+        rowsep = 1pt
+        }
+        Epoch & Échantillon d'images générées \\
+        0 & \begin{minipage}{\linewidth}\includegraphics[width=\linewidth]{Results/wgan_0e.pdf}\end{minipage}\\
+        50 & \begin{minipage}{\linewidth}\includegraphics[width=\linewidth]{Results/wgan_50e.pdf}\end{minipage}\\
+        100 & \begin{minipage}{\linewidth}\includegraphics[width=\linewidth]{Results/wgan_100e.pdf}\end{minipage}\\
+        150 & \begin{minipage}{\linewidth}\includegraphics[width=\linewidth]{Results/wgan_150e.pdf}\end{minipage}\\
+        200 & \begin{minipage}{\linewidth}\includegraphics[width=\linewidth]{Results/wgan_200e.pdf}\end{minipage}\\
+        250 & \begin{minipage}{\linewidth}\includegraphics[width=\linewidth]{Results/wgan_250e.pdf}\end{minipage}\\
+        300 & \begin{minipage}{\linewidth}\includegraphics[width=\linewidth]{Results/wgan_300e.pdf}\end{minipage}\\
+        350 & \begin{minipage}{\linewidth}\includegraphics[width=\linewidth]{Results/wgan_350e.pdf}\end{minipage}\\
+        \end{tblr}
+        \caption{Exemples d'images générées à différentes epochs}
+    \end{table}
+\end{minipage}
+
+On remarque cette fois que tant la courbe de FID que les courbes de perte décroissent de manière continue pendant l'entraînement : le problème de stabilité observé pour le Vanilla GAN a bien été réglé.\par
+Cependant, pour un nombre d'epoch identique, la FID est modérément plus élevée que pour le vanilla GAN, et les images générées plus floues. Étant donné les tendances observées, un entraînement plus long donnerait probablement des résultats légèrement, mais pas drastiquement meilleurs. L'implémentation WGAN permet donc effectivement de simplifier l'entraînement, mais n'aboutit pas nécessairement à des résultats plus probants. \par
+Les images générées par un autoencodeur sont finalement plus réalistes que celles générées via des GANs sur CIFAR-10. Ceci est représentatif d'une autre faiblesse des GANs, à savoir qu'ils sont très utiles pour générer des images d'une distribution d'images similaires (typiquement des visages), mais ont plus de mal à apprendre des distributions plus diversifiées telles que celles du dataset CIFAR. Ce dataset considéré comme simple pour des tâches de classification, car images de petites tailles et classes facilement séparables, n'est en réalité pas si simple pour des tâches de génération.
+
+\subsection{VQGAN}
+
+Ce modèle hybride, présenté dans l'article \textit{Taming Transformers for High-Resolution Image Synthesis} \cite{VQGAN} de 2021, améliore la richesse du codebook d'un VQVAE grâce à l'ajout d'une fonction de perte perceptuelle et adversariale. Le codebook ainsi appris est ensuite utilisé conjointement avec un transformer pour générer des images conditionnellement à du texte (ou autre type d'embedding)
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=16cm]{Images/VQGAN_paper.pdf}
+    \caption{Architecture simplifiée d'un modèle VQGAN utilisé pour de la génération d'images conditionnée}
+\end{figure}
+
+\underline{Première étape} : Apprentissage de l'encodage des données
+\large
+$$
+\mathcal{Q}^* = \arg \min_{E, G, \mathcal{Z}} \max_{D} \mathbb{E}_{x \sim p(x)}[\mathcal{L}_{VQ}(E, G, \mathcal{Z}) + \lambda \mathcal{L}_{GAN}(\{E, G, \mathcal{Z}\}, D)]
+$$
+\normalsize
+avec
+\large
+$$
+\begin{cases}
+\mathcal{L}_{VQ}(E, G, \mathcal{Z}) = \lVert x - \hat{x} \rVert_2^2 +  \lVert\text{sg}[E(x)] - z_q \rVert_2^2 + \lVert\text{sg}[z_q] - E(x) \rVert_2^2 \\
+\mathcal{L}_{GAN}(\{E, G, \mathcal{Z}\}, D) = [\log(D(x)) + \log(1 - D(\hat{x}))]
+\end{cases}
+$$
+\normalsize
+
+
+\underline{Deuxième étape} : Entraînement d'un transformer autorégressif
+\large
+$$
+\mathcal{L}_{Transformer} = \mathbb{E}_{x \sim p(x)}[-\log(p(s))]
+$$
+\normalsize
+
+
+\subsection{Diffusion models}
+\label{sec:diffusion_models}
+
+Les modèles de diffusion sont des algorithmes génératifs, introduits pour la première fois en 2015 dans un article des Université de Stanford et de Berkeley\cite{DIFF15}, avec déjà des résultats similaires aux modèles adversariaux de l'époque en terme de log-vraisemblance sur le dataset MNIST.
+
+Cependant, l'article qui a réellement lancé les modèles de diffusion pour réaliser de la génération d'images est celui de 2020, toujours de l'université de Berkeley, intitulé \textit{Denoising Diffusion Probablistic Model} \cite{DIFF20}. Cet article décrit un modèle de diffusion "simple", dans le sens où de nombreuses alternatives faisant appel à plus de complexité dans le choix des distributions de probabilités ont été étudiées par la suite.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=12cm]{Images/diffusion_principle.pdf}
+    \caption{Principe des modèles de diffusion}
+\end{figure}
+
+Le principe général qui sous-tend les modèles de diffusion est l'idée d'apprendre au modèle à débruiter des images corrompues par un certain bruit, et ce à différents niveaux de bruit.
+
+Ces niveaux de corruption sont formalisés par une suite $ (x_{t,for})_{t\in[0,T]}$, où $ x_0$ représente l'image originale et $x_t$ l'image corrompues après $t$ étapes. Cette suite s'appelle "forward process". Le processus inverse, appelé reverse process, doit permettre à partir d'une image aléatoire, de reconstruire une image cohérente à l'aide d'une suite $ (x_{t,rev})_{t\in[T,0]}$. Dans la suite, nous noterons les deux processus, forward ou reverse, simplement $(x_t)$, en accord avec la littérature dans le domaine.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=12cm]{Images/diffused_cat.pdf}
+    \caption{Illustration d'un processus forward et reverse}
+\end{figure}
+
+Le principal intérêt des modèles de diffusion est leur capacité à générer des images de qualité équivalente à celles générées via des GANs (jusqu'alors état de l'art pour la génération d'images), sans les problèmes liés à l'instabilité de l'entraînement de ce type de modèles. L'image ci-dessous illustre par exemple les résultats obtenus sur le dataset CIFAR-10 par l'équipe de Berkeley en 2020. Les images échantillonnées sont présentées de gauche à droite, de $x_T$ jusqu'à $x_0$. Beaucoup d'images intermédiaires ne sont pas présentées, le nombre d'étapes de bruitage utilisé étant important ($T = 1000$ steps). Sur ce type de dataset très varié (les 10 classes à générer sont complètement différentes, contrairement à un dataset comme MNIST ou Celeb A), les modèles de diffusion surpassent même les GANs.
+
+En contrepartie, le processus de génération d'images avec un modèle de diffusion implique d'utiliser le modèle en inférence $T$ fois sur un bruit initial pour aboutir à une image de bonne qualité : il est donc extrêmement lent en comparaison à ce qu'un GAN peut produire. Ceci est problématique pour de la génération d'images en temps réel (en particulier de vidéos). La figure suivante, extraite d'un article de NVIDIA intitulé "the generative learning trilemma" \cite{NVIDIA}, permet de résumer les avantages et inconvénients de chacun des modèles génératifs introduits jusqu'à présent :
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=6cm]{Images/trilemma.pdf}
+    \caption{Forces et faiblesses des différents algorithmes génératifs}
+\end{figure}
+
+L'équipe de NVIDIA décrit également dans leur article une architecture mixte entre GAN et modèle de diffusion, appelée \textit{Denoising Diffusion GAN}, tentant de résoudre le problème du temps d'échantillonage. Nous détaillerons d'autres approches plus populaires pour aborder ce problème, qui est actuellement un axe de recherche très actif.
+
+L'étude des modèles de diffusion étant le principalement objet de notre projet fil rouge, seront présentées dans des sections plus importantes deux implémentations de ces types de modèle : celle de l'article initial (\textit{Denoising Diffusion Probablistic Model}) et celle des Latent Diffusion Models (\textit{Stable Diffusion}).
+
+\clearpage
+
+\section{Denoising Diffusion Probabilistic Models}
+\subsection{Justifications théoriques}
+
+Dans cette section, le but sera de montrer comment, pour le processus de diffusion initial introduit dans l'article \textit{Denoising Diffusion Probablistic Model}\cite{DIFF20} :
+\begin{itemize}
+    \item Il est possible de relier le critère de maximisation de la vraisemblance des images d'entraînement $\boldsymbol{x}_0$ à une fonction de perte permettant de réaliser l'entraînement d'un réseau de neurones.
+    \item Cette fonction de perte peut s'écrire sous une forme simplifiée \textbf{ne faisant intervenir que le bruit} entre deux étapes de bruitage : le modèle ne prédit que le bruit ajouté sur l'image précédente, pas l'image en elle-même
+\end{itemize}
+
+\subsubsection{Notations}
+\label{sec:DDPM_Notations}
+
+\begin{spacing}{1}
+En reprenant les notations définies à la section \hyperref[sec:diffusion_models]{2.3. Diffusion Models}, l'équation décrivant le bruitage donnant l'élément $\boldsymbol{x}_t$ à partir de l'élément $\boldsymbol{x}_t-1$ est la suivante. Nous l'écrivons sous forme de loi de probabilité conditionnelle $q$ dont on tire un échantillon :
+\end{spacing}
+\large
+$$q(\boldsymbol{x}_t|\boldsymbol{x}_{t-1}) = \mathcal{N}(\boldsymbol{x}_t;\sqrt{1-\beta_t}\boldsymbol{x}_{t-1},\beta_t\textbf{I}) \textit{\quad \quad \quad (forward process)}$$
+\normalsize
+Nous observons ainsi un processus markovien, car $\boldsymbol{x}_t$ ne dépend explicitement que de $\boldsymbol{x}_{t-1}$. Les paramètres $\beta_t$ déterminent le \textit{scheduling} du processus de diffusion. De manière générale, le scheduling représente la dynamique du processus de diffusion (forward et backward, qui sont mathématiquement liés). Il décrit notamment la forme des pas de diffusion (ici gaussiens), ainsi que leur nombre (représentés ici par les paramètres $\beta_t$). $\beta_t$ paramétrise à la fois la moyenne et la variance du bruit ajouté à chaque étape.  Il est intéressant de remarquer que choisir un $\beta_t$ proche de 0 revient à générer une image de moyenne égale à l'image à l'instant précédent, de variance nulle (i.e. à n'ajouter aucun bruit), alors qu'un $\beta_t$ grand (proche de 1) va échantillonner une valeur de pixel à partir d'une distribution de moyenne nulle et de variance 1 (i.e. générer une image complètement aléatoire, sans lien avec l'image à l'instant précédent). Dans l'article, les auteurs font varier linéairement $\beta_t$ entre $10^{-4}$ et $2 \times 10^{-2}$, sur une échelle de 1000 pas. Ce choix sera justifié après avoir évoqué le processus inverse.\\
+Une autre notation utile à introduire pour le processus forward est $\alpha_t = 1 - \beta_t$ et $\bar\alpha_t = \prod_{s=0}^t \alpha_s$. Ainsi défini, on peut réécrire ce processus sous la forme :
+\begin{align*}
+q(\boldsymbol{x}_t|\boldsymbol{x}_{t-1}) &= \sqrt{\alpha_t}\boldsymbol{x}_{t-1} + \sqrt{1 - \alpha_t}\epsilon_{t-1}^* &\tag*{ avec $\epsilon_{t-1}^* \sim  \mathcal{N}(0,1)$} \\
+&= \sqrt{\alpha_t} (\sqrt{\alpha_{t-1}}\boldsymbol{x}_{t-2} + \sqrt{1 - \alpha_{t-1}}\epsilon_{t-2}^*) + \sqrt{1 - \alpha_t}\epsilon_{t-1}^* &\tag*{ avec $\epsilon_{t-2}^* \sim  \mathcal{N}(0,1)$} \\
+&= \sqrt{\alpha_t \alpha_{t-1}}\boldsymbol{x}_{t-2} + \sqrt{\alpha_t- \alpha_t \alpha_{t-1}} \epsilon_{t-2}^* + \sqrt{1 - \alpha_t}\epsilon_{t-1}^* \\
+&= \sqrt{\alpha_t \alpha_{t-1}}\boldsymbol{x}_{t-2} + \sqrt{\sqrt{\alpha_t- \alpha_t \alpha_{t-1}}^2 + \sqrt{1 - \alpha_t}^2} \epsilon_{t-2} && \parbox[t]{6cm}{avec $\epsilon_{t-2} \sim \mathcal{N}(0,1)$ \textit{car la somme de 2 vecteurs gaussiens est \href{https://en.wikipedia.org/wiki/Sum_of_normally_distributed_random_variables}{un vecteur gaussien de variance la somme des 2 variances}}} \\
+&= \sqrt{\alpha_t \alpha_{t-1}}\boldsymbol{x}_{t-2} + \sqrt{\cancel{\alpha_t}- \alpha_t \alpha_{t-1} + 1 \cancel{- \alpha_t}} \epsilon_{t-2} \\
+&= \sqrt{\alpha_t \alpha_{t-1}}\boldsymbol{x}_{t-2} + \sqrt{1 - \alpha_t \alpha_{t-1}} \epsilon_{t-2} \\
+&= ... \\
+&= \sqrt{\bar\alpha_t} \boldsymbol{x}_0 + \sqrt{1 - \bar\alpha_t} \epsilon &\tag*{ équivalent à $\boxed{q(\boldsymbol{x}_t|\boldsymbol{x}_0) = \mathcal{N}(\boldsymbol{x}_t;\sqrt{\bar\alpha_t}\boldsymbol{x}_0,(1-\bar\alpha_t)\textbf{I})}$}
+\end{align*}
+
+La distribution de probabilité qui servira à l'échantillonnage est la suivante :
+\large
+$$p(\boldsymbol{x}_{t-1}|\boldsymbol{x}_t) = \mathcal{N}(\boldsymbol{x}_{t-1};\mu_\theta(\boldsymbol{x}_t,t),\Sigma_\theta(\boldsymbol{x}_t,t)) \textit{\quad \quad \quad (reverse process)}$$
+\normalsize
+Le réseau entraîné pourrait être utilisé pour apprendre à générer à la fois la moyenne $\mu_\theta$ et la matrice de covariance $\Sigma_\theta$. En pratique, les auteurs fixent $\Sigma_\theta(\boldsymbol{x}_t,t) = \sigma^2 \textbf{I} $ constante et ne se servent du réseau de neurones que pour prédire $\mu_\theta$ (d'autres implémentations ne font pas ce choix). \\
+Les données d'entraînement sont désignées par $\boldsymbol{x}_0$, les données entièrement bruitées par $\boldsymbol{x}_T$.
+
+Les paramètres que le modèle devra apprendre à partir de ces images d'entraînement sont pour chaque timestep $t$ la loi normale, \textbf{caractérisée uniquement par sa moyenne} $\boldsymbol{\mu_\theta(x_t,t})$ (la valeur de  $\sigma^2$ est fixée). Le processus forward est fixé à l'avance et ses paramètres ne sont pas entraînés. \\
+Le théorème de Bayes nous permet d'affirmer que $q(x_t|x_{t-1}) \propto p(x_{t-1}|x_t)q(x_{t-1})$. Après calculs que nous ne détaillons pas ici, cette relation contraint à devoir considérer le cas $\beta \longrightarrow 0$ pour que le reverse process soit lui aussi gaussien \cite{FELLER}.
+
+\subsubsection{Expression de la ELBO Loss}
+L'objectif du modèle est de générer l'image la plus probable correspondant au bruit fourni en entrée, c'est-à-dire à maximiser la vraisemblance (ou la log-vraisemblance par monotonie du log) de $x_0$, i.e. la quantité $\log(p(x_0))$. De même que pour un VAE, cette vraisemblance n'est pas calculable directement, mais on peut la minorer par une expression qui l'est :
+
+\begin{align*}
+\log(p(\boldsymbol{x})) &= \log(\int{p(\boldsymbol{x}_{0:T})d\boldsymbol{x}_{1:T}}) \\
+&= \log(\int{p(\boldsymbol{x}_{0:T}) \frac{q(\boldsymbol{x}_{1:T}|\boldsymbol{x}_{0})}{q(\boldsymbol{x}_{1:T}|\boldsymbol{x}_{0})} d\boldsymbol{x}_{1:T}}) \\
+&= \log(\mathbb{E}_{q(\boldsymbol{x}_{1:T}|\boldsymbol{x}_{0})}[\frac{p(\boldsymbol{x}_{0:T})}{q(\boldsymbol{x}_{1:T}|\boldsymbol{x}_{0})}]) & \tag*{d'après le théorème de transfert $x \rightarrow q(\boldsymbol{x}_{1:T}|\boldsymbol{x}_{0})$}\\
+&\geq \mathbb{E}_{q(\boldsymbol{x}_{1:T}|\boldsymbol{x}_{0})}[\log(\frac{p(\boldsymbol{x}_{0:T})}{q(\boldsymbol{x}_{1:T}|\boldsymbol{x}_{0})})] & \tag*{d'après l'inégalité de Jensen (log est convexe)}\\
+&= \mathbb{E}_{q(\boldsymbol{x}_{1:T}|\boldsymbol{x}_{0})}[\log(\frac{p(\boldsymbol{x}_T) \prod_{t=1}^T p_{\theta}(\boldsymbol{x}_{t-1}|\boldsymbol{x}_t)}{\prod_{t=1}^T q(\boldsymbol{x}_t|\boldsymbol{x}_{t-1})})] &\tag*{factorisation sous hypothèse markovienne} \\
+&= \mathbb{E}_{q(\boldsymbol{x}_{1:T}|\boldsymbol{x}_{0})}[\log(\frac{p(\boldsymbol{x}_T)p_{\theta}(\boldsymbol{x}_0|\boldsymbol{x}_1) \prod_{t=2}^T p_{\theta}(\boldsymbol{x}_{t-1}|\boldsymbol{x}_t)}{q(\boldsymbol{x}_1|\boldsymbol{x}_0) \prod_{t=2}^{T} q(\boldsymbol{x}_t|\boldsymbol{x}_{t-1})})] & \tag*{extraction du 1$^{er}$terme des produits}
+\end{align*}
+Une astuce de calcul consiste ici à réécrire la transition forward en conditionnant en plus sur $\boldsymbol{x}_0$, ce qui est superflu dans l'hypothèse markovienne mais reste correct : $ q(\boldsymbol{x}_t|\boldsymbol{x}_{t-1}) = q(\boldsymbol{x}_t|\boldsymbol{x}_{t-1}, \boldsymbol{x}_0)$.\\
+D'où, 
+\begin{align*}
+\log(p(\boldsymbol{x})) &\geq \mathbb{E}_{q(\boldsymbol{x}_{1:T}|\boldsymbol{x}_{0})}[\log(\frac{p(\boldsymbol{x}_T)p_{\theta}(\boldsymbol{x}_0|\boldsymbol{x}_1) \prod_{t=2}^T p_{\theta}(\boldsymbol{x}_{t-1}|\boldsymbol{x}_t)}{q(\boldsymbol{x}_1|\boldsymbol{x}_0) \prod_{t=2}^{T} q(\boldsymbol{x}_t|\boldsymbol{x}_{t-1}, \boldsymbol{x}_0)})] \\
+&= \mathbb{E}_{q(\boldsymbol{x}_{1:T}|\boldsymbol{x}_0)}[\log(\frac{p(\boldsymbol{x}_T)p_{\theta}(\boldsymbol{x}_0|\boldsymbol{x}_1)}{q(\boldsymbol{x}_1|\boldsymbol{x}_0)}) + \log(\frac{\prod_{t=2}^T p_{\theta}(\boldsymbol{x}_{t-1}|\boldsymbol{x}_t)}{\prod_{t=2}^{T} q(\boldsymbol{x}_t|\boldsymbol{x}_{t-1}, \boldsymbol{x}_0)})]
+\end{align*}
+Or, d'après le théorème de Bayes, 
+\begin{align*}
+q(\boldsymbol{x}_t|\boldsymbol{x}_{t-1},\boldsymbol{x}_{0}) &= \frac{q(\boldsymbol{x}_{t-1}|\boldsymbol{x}_t,\boldsymbol{x}_{0})q(\boldsymbol{x}_t|\boldsymbol{x}_{0})}{q(\boldsymbol{x}_{t-1}|\boldsymbol{x}_{0})} \\
+\Rightarrow \prod_{t=2}^{T} q(\boldsymbol{x}_t|\boldsymbol{x}_{t-1},\boldsymbol{x}_{0}) &= \prod_{t=2}^{T} \frac{q(\boldsymbol{x}_{t-1}|\boldsymbol{x}_t,\boldsymbol{x}_{0})q(\boldsymbol{x}_t|\boldsymbol{x}_{0})}{q(\boldsymbol{x}_{t-1}|\boldsymbol{x}_{0})} \\
+&= \frac{q(\boldsymbol{x}_{1}|\boldsymbol{x}_2,\boldsymbol{x}_{0})\cancel{q(\boldsymbol{x}_2|\boldsymbol{x}_{0})} q(\boldsymbol{x}_{2}|\boldsymbol{x}_3,\boldsymbol{x}_{0})\cancel{q(\boldsymbol{x}_3|\boldsymbol{x}_{0})} ... \cancel{q(\boldsymbol{x}_{T-1}|\boldsymbol{x}_{0})}q(\boldsymbol{x}_{T-1}|\boldsymbol{x}_T,\boldsymbol{x}_{0})q(\boldsymbol{x}_T|\boldsymbol{x}_{0})}{q(\boldsymbol{x}_1|\boldsymbol{x}_{0})\cancel{q(\boldsymbol{x}_2|\boldsymbol{x}_{0})}\cancel{q(\boldsymbol{x}_3|\boldsymbol{x}_{0})}...\cancel{q(\boldsymbol{x}_{T-1}|\boldsymbol{x}_{0})}} \\
+&= \frac{q(\boldsymbol{x}_T|\boldsymbol{x}_{0})}{q(\boldsymbol{x}_1|\boldsymbol{x}_{0})} \prod_{t=2}^{T} q(\boldsymbol{x}_t|\boldsymbol{x}_{t-1},\boldsymbol{x}_{0})
+\end{align*}
+Ainsi, 
+\begin{align*}
+\log(p(\boldsymbol{x})) &\geq \mathbb{E}_{q(\boldsymbol{x}_{1:T}|\boldsymbol{x}_0)}[\log(\frac{p(\boldsymbol{x}_T)p_{\theta}(\boldsymbol{x}_0|\boldsymbol{x}_1)}{\cancel{q(\boldsymbol{x}_1|\boldsymbol{x}_0)}}) + \log(\frac{\cancel{q(\boldsymbol{x}_1|\boldsymbol{x}_{0})}}{q(\boldsymbol{x}_T|\boldsymbol{x}_{0})}) + \log(\prod_{t=2}^T \frac{p_{\theta}(\boldsymbol{x}_{t-1}|\boldsymbol{x}_t)}{q(\boldsymbol{x}_{t-1}|\boldsymbol{x}_t,\boldsymbol{x}_{0})})] \\
+&= \mathbb{E}_{q(\boldsymbol{x}_{1:T}|\boldsymbol{x}_0)}[\log(\frac{p(\boldsymbol{x}_T)p_{\theta}(\boldsymbol{x}_0|\boldsymbol{x}_1)}{q(\boldsymbol{x}_T|\boldsymbol{x}_{0})}) + \sum_{t=2}^T \log(\frac{p_{\theta}(\boldsymbol{x}_{t-1}|\boldsymbol{x}_t)}{q(\boldsymbol{x}_{t-1}|\boldsymbol{x}_t,\boldsymbol{x}_{0})})] \\
+&= \mathbb{E}_{q(\boldsymbol{x}_{1:T}|\boldsymbol{x}_0)}[\log(p_{\theta}(\boldsymbol{x}_0|\boldsymbol{x}_1))] + \mathbb{E}_{q(\boldsymbol{x}_{1:T}|\boldsymbol{x}_0)}[\log(\frac{p(\boldsymbol{x}_T)}{q(\boldsymbol{x}_T|\boldsymbol{x}_{0})})] + \sum_{t=2}^T \mathbb{E}_{q(\boldsymbol{x}_{1:T}|\boldsymbol{x}_0)}[\log(\frac{p_{\theta}(\boldsymbol{x}_{t-1}|\boldsymbol{x}_t)}{q(\boldsymbol{x}_{t-1}|\boldsymbol{x}_t,\boldsymbol{x}_{0})})]
+\end{align*}
+Cette dernière équation peut être simplifiée en ne conservant que les variables contenues dans la distribution à laquelle on applique l'espérance.\\
+En effet,
+\begin{align*}
+\mathbb{E}_{q(\boldsymbol{x}_{1:T}|\boldsymbol{x}_{0})}[\log(p_{\theta}(\boldsymbol{x}_{1}|\boldsymbol{x}_{0}))] &= \int_{\boldsymbol{x}_{1:T}}q(\boldsymbol{x}_{1:T}|\boldsymbol{x}_{0})\log(p_{\theta}(\boldsymbol{x}_{1}|\boldsymbol{x}_{0})) d\boldsymbol{x}_{1:T} \\
+&= \int_{\boldsymbol{x}_{1:T}}q(\boldsymbol{x}_{1}|\boldsymbol{x}_{0})q(\boldsymbol{x}_{2:T}|\boldsymbol{x}_{1},\boldsymbol{x}_{0})\log(p_{\theta}(\boldsymbol{x}_{1}|\boldsymbol{x}_{0})) d\boldsymbol{x}_{1:T} \\
+&= \int_{\boldsymbol{x}_{1}}q(\boldsymbol{x}_{1}|\boldsymbol{x}_{0})\log(p_{\theta}(\boldsymbol{x}_{1}|\boldsymbol{x}_{0}))d\boldsymbol{x}_1 \underbrace{\int_{\boldsymbol{x}_{2:T}}q(\boldsymbol{x}_{2:T}|\boldsymbol{x}_{1}\boldsymbol{x}_{0}) d\boldsymbol{x}_{2:T}}_{=1 \text{ par définition}} \\
+&= \int_{\boldsymbol{x}_{1}}q(\boldsymbol{x}_{1}|\boldsymbol{x}_{0})\log(p_{\theta}(\boldsymbol{x}_{1}|\boldsymbol{x}_{0}))d\boldsymbol{x}_1 \\
+&= \mathbb{E}_{q(\boldsymbol{x}_{1}|\boldsymbol{x}_{0})}[\log(p_{\theta}(\boldsymbol{x}_{1}|\boldsymbol{x}_{0}))]
+\end{align*}
+D'où
+\begin{align*}
+\log(p(\boldsymbol{x})) &\geq \mathbb{E}_{q(\boldsymbol{x}_{1}|\boldsymbol{x}_0)}[\log(p_{\theta}(\boldsymbol{x}_0|\boldsymbol{x}_1))] + \mathbb{E}_{q(\boldsymbol{x}_{T}|\boldsymbol{x}_0)}[\log(\frac{p(\boldsymbol{x}_T)}{q(\boldsymbol{x}_T|\boldsymbol{x}_{0})})] + \sum_{t=2}^T \mathbb{E}_{q(\boldsymbol{x}_t, \boldsymbol{x}_{t-1}|\boldsymbol{x}_0)}[\log(\frac{p_{\theta}(\boldsymbol{x}_{t-1}|\boldsymbol{x}_t)}{q(\boldsymbol{x}_{t-1}|\boldsymbol{x}_t,\boldsymbol{x}_{0})})] \\
+\Rightarrow \Aboxed{\log(p(\boldsymbol{x})) &\geq \underbrace{\mathbb{E}_{q(\boldsymbol{x}_{1}|\boldsymbol{x}_{0})} [\log(p_{\theta}(\boldsymbol{x}_{0}|\boldsymbol{x}_{1}))]}_{\text{reconstruction term}} - \underbrace{D_{\text{KL}}(q(\boldsymbol{x}_{T}|\boldsymbol{x}_{0}) || p(\boldsymbol{x}_T))}_{\text{prior matching term}} - \sum_{t=2}^T \underbrace{\mathbb{E}_{q(\boldsymbol{x}_{t}|\boldsymbol{x}_{0})} [D_{\text{KL}}(q(\boldsymbol{x}_{t-1}|\boldsymbol{x}_{t},\boldsymbol{x}_{0}) || p_{\theta}(\boldsymbol{x}_{t-1}|\boldsymbol{x}_{t}))]}_{\text{denoising matching term}}}
+\end{align*}
+
+L'expression ainsi obtenue est la Evidence Lower BOund (ELBO) des modèles de diffusion. Elle est composée de trois termes :
+\begin{itemize}
+    \item  \underline{Reconstruction term} : Mesure la qualité de reconstruction des images originales à partir du premier état latent ($\boldsymbol{x}_1$). Comme pour un VAE, ce terme peut être optimisé ou approché par méthode de Monte Carlo
+    \item \underline{Prior matching term} : Ce terme ne contient pas de paramètre entraînable, il représente juste la proximité de la distribution finale bruitée $q(\boldsymbol{x}_T|\boldsymbol{x}_0$) par rapport au prior gaussien choisi $p(\boldsymbol{x}_T)$. Il s'agit donc d'une constante qui peut être ignorée dans la fonction de perte
+    \item \underline{Denoising matching term} : Minimiser ce terme revient à réduire l'écart entre la distribution $q$ (spécifiquement construite à partir des paramètres $\beta$) utilisée pour bruiter les images, et la distribution $p_{\theta}$ que le réseau cherche à apprendre pour débruiter les images en passant d'un état $t-1$ à $t$. \\
+    C'est ce terme qui a le plus d'impact dans la loss (somme de termes contenant les paramètres d'entraînement)
+\end{itemize}
+
+\subsubsection{Simplification de la fonction de perte}
+
+Le \textbf{Denoising matching term} est donc une divergence de Kullback-Leibler entre deux distributions. La distribution $p_\theta(\textbf{x}_{t-1}|\textbf{x}_t)$ est gaussienne dans l'hypothèse initiale faite par les auteurs, et la distribution $q(\textbf{x}_{t}|\textbf{x}_{t-1})$ est gaussienne par construction. Or, la divergence de Kullback-Leibler entre deux variables aléatoires gaussiennes de même dimension $d$ \href{https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence#Multivariate_normal_distributions}{prend la forme analytique simple suivante} :
+\large
+$$ D_{KL} (\mathcal{N}(\boldsymbol{x};\boldsymbol{\mu}_x,\boldsymbol{\Sigma}_x)||\mathcal{N}(\boldsymbol{y};\boldsymbol{\mu}_y,\boldsymbol{\Sigma}_y)) = \frac{1}{2} [\log\frac{\lvert \boldsymbol{\Sigma}_y \rvert}{\lvert \boldsymbol{\Sigma}_x \rvert} - d + \text{tr}(\boldsymbol{\Sigma}_y^{-1} \boldsymbol{\Sigma}_x) + (\boldsymbol{\mu}_y - \boldsymbol{\mu}_x)^\intercal \boldsymbol{\Sigma}_y^{-1} (\boldsymbol{\mu}_y - \boldsymbol{\mu}_x)]$$
+\normalsize
+Il semble donc raisonnable de vérifier si $q(\boldsymbol{x}_{t-1}|\boldsymbol{x}_{t},\boldsymbol{x}_{0})$ est gaussien pour utiliser cette forme, et alléger l'expression de la ELBO loss. Le théorème de Bayes nous permet une fois de plus de réécrire le processus forward
+$$ q(\boldsymbol{x}_{t-1}|\boldsymbol{x}_{t},\boldsymbol{x}_{0}) = \frac{q(\boldsymbol{x}_{t}|\boldsymbol{x}_{t-1},\boldsymbol{x}_{0})q(\boldsymbol{x}_{t-1}|\boldsymbol{x}_{0})}{q(\boldsymbol{x}_{t}|\boldsymbol{x}_{0})} $$
+
+Dans la section \hyperref[sec:DDPM_Notations]{3.1.1. Notations}, nous avons déjà montré que $q(\boldsymbol{x}_{t}|\boldsymbol{x}_{0})$ est gaussien de moyenne $\sqrt{\bar \alpha_t}$ et de variance $(1-\bar\alpha_t)\textbf{I}$ lors de l'introduction de la notation $\bar \alpha_t$. D'où
+\begin{align*}
+q(\boldsymbol{x}_{t-1}|\boldsymbol{x}_{t},\boldsymbol{x}_{0}) &= \frac{q(\boldsymbol{x}_{t}|\boldsymbol{x}_{t-1},\boldsymbol{x}_{0})q(\boldsymbol{x}_{t-1}|\boldsymbol{x}_{0})}{q(\boldsymbol{x}_{t}|\boldsymbol{x}_{0})} \\
+&= \frac{\mathcal{N}(\boldsymbol{x}_{t};\sqrt{\alpha_t}\boldsymbol{x}_{t-1},\beta_t \textbf{I}) \quad \mathcal{N}(\boldsymbol{x}_{t-1};\sqrt{\bar\alpha_{t-1}}\boldsymbol{x}_0,(1-\bar\alpha_{t-1})\textbf{I})}{\mathcal{N}(\boldsymbol{x}_t;\sqrt{\bar\alpha_t}\boldsymbol{x}_0,(1-\bar\alpha_t)\textbf{I})}
+\end{align*}
+i.e.
+\begin{align*}
+q(\boldsymbol{x}_{t-1}|\boldsymbol{x}_t,\boldsymbol{x}_{0}) &\propto \exp(-\frac{1}{2}( \frac{(\boldsymbol{x}_{t} - \sqrt{\alpha_t}\boldsymbol{x}_{t-1})^2}{\beta_t} + \frac{(\boldsymbol{x}_{t-1} - \sqrt{\bar \alpha_{t-1}}\boldsymbol{x}_0)^2}{1 - \bar \alpha_{t-1}} - \frac{(\boldsymbol{x}_t - \sqrt{\bar \alpha_t}\boldsymbol{x}_0)^2}{1 - \bar \alpha_t}) ) \\
+&= \exp(-\frac{1}{2}( \frac{\boldsymbol{x}_{t}^2 - 2\sqrt{\alpha_t}\boldsymbol{x}_{t}\boldsymbol{x}_{t-1} + \alpha_t \boldsymbol{x}_{t-1}^2}{\beta_t} + \frac{\boldsymbol{x}_{t-1}^2 - 2\sqrt{\bar \alpha_{t-1}}\boldsymbol{x}_0\boldsymbol{x}_{t-1} + \bar \alpha_{t-1}\boldsymbol{x}_0^2 }{1 - \bar \alpha_{t-1}} - \frac{(\boldsymbol{x}_t - \sqrt{\bar \alpha_t}\boldsymbol{x}_0)^2}{1 - \bar \alpha_t}) ) \\
+&= \exp(-\frac{1}{2}( (\frac{\alpha_t}{\beta_t} + \frac{1}{1 - \bar \alpha_{t-1}})\boldsymbol{x}_{t-1}^2 + (\frac{2\sqrt{\alpha_t}}{\beta_t}\boldsymbol{x}_t + \frac{2\sqrt{\bar \alpha_{t-1}}}{1 - \bar \alpha_{t-1}}\boldsymbol{x}_0)\boldsymbol{x}_{t-1} + C(\boldsymbol{x}_t, \boldsymbol{x}_0)) &\text{$\hspace{-2.5cm}$ avec $C$ cte w.r.t. $\boldsymbol{x}_{t-1}$} \\
+\end{align*}
+
+Il est ensuite possible de montrer que $q(\textbf{x}_{t-1}|{x}_{t},{x}_{0})$ suit une loi gaussienne, de moyenne $ \mu_{q}(\textbf{x}_t,\textbf{x}_0)$, et d'écart-type  $\Sigma_q(t)$ dépendant tous les deux des $\alpha_t$. Les calculs sont lourds, et impliquent de passer par les densités des 3 distributions de probabilités. L'auteur obtient les résultats suivants pour la distribution :
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=12cm]{Images/mu_q.png}
+    \caption{Paramètres de la distribution "ground truth"}
+\end{figure}
+
+Nous pouvons donc enfin calculer analytiquement la divergence de Kullback-Leibler entre notre distribution "ground truth". Rappelons à ce stade que la seule différence entre les deux distributions est la connaissance de $\textbf{x}_0$ !
+
+Nous faisons une hypothèse supplémentaire, celle d'homoscédasticité entre ces deux distributions, c'est-à-dire que leurs matrices de covariances sont les mêmes. Cela permet de simplifier la fonction à optimiser. Ainsi, la minimisation de la divergence KL entre les deux distributions revient au problème d'optimisation suivant :
+
+$$ arg min_{\theta}  \frac{1}{{\sigma_q}^2} {||\mu_\theta - \mu_q||}^2 $$
+
+Si on reprend la formule pour $\mu_q$, on constate bien que la seule quantité inconnue est $\textbf{x}_0$. On va donc chercher à estimer cette quantité par un réseau de neurones $\hat{x_\theta}(\textbf{x}_t,t)$ (en général un U-Net dans ce cas). 
+
+La moyenne qu'on va apprendre sera donc :
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=12cm]{Images/mu_theta.png}
+    \caption{Moyenne de la distribution backward à apprendre}
+\end{figure}
+
+En remplaçant ces deux moyennes dans l'objectif d'optimisation précédent $ arg min_{\theta}  \frac{1}{{\sigma_q}^2} {||\mu_\theta - \mu_q||}^2 $, on obtient la fonction de perte suivant, toujours à minimiser :
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=12cm]{Images/loss_fn.png}
+    \caption{Fonction de perte}
+\end{figure}
+
+Le réseau de neurones $\hat{x_\theta}(\textbf{x}_t,t)$ dépend du temps et de l'image à un niveau de corruption arbitraire : il devra donc apprendre à prédire l'image originale à partir de n'importe quel niveau de bruit. La fonction de perte est au final une MSE Loss (à un facteur dépendant des $\alpha_t$ près) entre l'image originale et l'image reconstruite par le réseau de neurones à partir de sa version corrompue à un temps $t$.
+
+Ainsi, en pratique, la loss va être calculée à partir de la prédiction à un niveau de bruit arbitraire, choisi selon une loi uniforme sur les timesteps. On utilise par dessus une descente de gradient stochastique (SGD), ce qui signifie qu'on choisit d'abord aléatoirement l'image qui va passer dans le réseau.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=15cm]{Images/algos_diff.png}
+    \caption{Algorithmes d'entraînement et d'échantillonage d'un modèle de diffusion}
+\end{figure}
+
+On retrouve bien ces étapes dans l'algorithme 1. On choisit parmi les images d'entraînement une image $\textbf{x}_0$, puis un niveau de bruit $t$.
+
+La fonction de loss présentée ici, extraite de l'article \cite{DIFF20}, est améliorée par un reparametrization trick, qui fait que le réseau de neurones apprend à prédire un bruit $\epsilon$ qui caractérise parfaitement (via un reparametrization trick) l'image originale.
+
+Le deuxième algorithme est celui utilisé pour réaliser l'échantillonnage. Une fois que les paramètres sont appris, on part d'une image aléatoire, puis on suit le processus reverse (lui aussi reparamétrisé). Cela permet finalement d'obtenir une image débruitée en $\textbf{x}_0$.
+
+Pour terminer, nous proposons une vue d'ensemble qui relie les concepts qui sont rentrés en jeu pour définir une fonction de perte, et par conséquent un processus de training/sampling.
+
+
+\subsection{Implémentation}
+\subsubsection{Architecture initiale}
+
+Comme expliqué de manière théorique, le réseau de neurones entraîné doit prédire le bruit contenu dans une image à partir d'une image bruitée fournie en entrée. Le tenseur en sortie du réseau doit donc être un tenseur de même dimension que celui d'entrée. Pour cette tâche, les auteurs de l'article DDPM ont donc naturellement utilisé un modèle basé sur l'architecture d'un réseau \textbf{U-Net} \cite{U-Net}, en s'inspirant de l'architecture de PixelCNN++ \cite{pixelcnn++}. Le schéma ci-dessous présente ce schéma avec les paramètres utilisés dans l'article :
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=18cm]{Images/DDPM_UNet.pdf}
+    \caption{Architecture UNet du modèle DDPM \cite{ddpm_unet_schema}}
+    \label{UNet-DDPM}
+\end{figure}
+
+Plusieurs modifications ont été apportées à l'architecture originale du U-Net dans le contexte des modèles de diffusions. \par
+\begin{minipage}{.60\textwidth}
+    \setlength{\parindent}{1.5em}
+    La première modification importante est l'utilisation de modules de \textbf{Self-Atttention à 4 attention heads à 2 endroits dans le réseau}, lorsque la résolution des features maps est de 16 x 16 pixels (représentés en gris-clair dans la figure ci-dessus). L'équivalent des text embeddings que l'on rencontre en NLP sont ici des "embeddings de pixels" dont la dimension est le nombre de features maps de la couche considérée, comme illustré sur la figure \ref{SA-CNN}. Ces modules de self-attention participent aux bons résultats du modèle (de manière difficile à quantifier), mais seront surtout essentiels pour permettre le conditionnement de la génération d'images par du texte via cross attention dans les modèles s'inspirant de cette implémentation.
+\end{minipage}
+\begin{minipage}{.01\textwidth}
+    \text{\hfill}
+\end{minipage}
+\begin{minipage}{.4\textwidth}
+    \vspace{-0.5cm}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=5cm]{Images/Self-Attention_CNN.png}
+        \caption{Self-Attention dans un réseau convolutionnel \cite{self-attention-cnn}}
+        \label{SA-CNN}
+    \end{figure}
+\end{minipage}
+
+\begin{minipage}{.40\textwidth}
+    \vspace{-0.5cm}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=7cm]{Images/Sinusoidal_positional_embeddings.png}
+        \caption{Visualisation des time embeddings utilisés (abscisses : feature map $c$ parmi les $C$ feature maps de la couche considérée, ordonnées : step de diffusion $t$) \cite{time_embeddings}}
+        \label{pos-enc}
+    \end{figure}
+\end{minipage}
+\begin{minipage}{.02\textwidth}
+    \text{\hfill}
+\end{minipage}
+\begin{minipage}{.58\textwidth}
+    \setlength{\parindent}{1.5em}
+    \begin{spacing}{1}
+    Une deuxième modification, elle aussi inspirée de l'architecture des Transformers \cite{transformers}, est l'emploi de \textbf{Positional Embeddings} pour encoder l'instant $t$ (et donc le niveau de bruit) auquel l'image en entrée du réseau est associée. L'encoding est fait de manière sinusoïdal : sinus sur la première moitié de dimension d'embeddings, cosinus sur la seconde, comme illustré sur la figure \ref{pos-enc} pour 20 embeddings de dimension 512 (les couleurs sombres sont proches de 0, les couleurs jaunes proches de 1). A un instant t, pour une couche avec C feature maps, le tenseur de positional encoding est la concaténation des 2 tenseurs suivants :
+    \end{spacing}
+    \large
+    \vspace{-0.5cm}
+    \begin{align*}
+        \begin{cases}
+            P_{\sin}(t, C) = \sin(\dfrac{\left \lfloor{\sfrac{t}{2}}\right \rfloor}{f_{inv}}) \\
+            P_{\cos}(t, C) = \cos(\dfrac{\left \lfloor{\sfrac{t}{2}}\right \rfloor}{f_{inv}}) \\
+        \end{cases}
+        &\text{\normalsize avec $f_{inv} = \frac{1}{10000^c}$, $c \in [0, 2, 4, ..., C]$}
+    \end{align*}
+\end{minipage}
+
+\begin{minipage}{.5\textwidth}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=6cm]{Images/ResNetBlock_DDPM.png}
+        \caption{Focus sur un bloc ResNet}
+        \vspace{0.5cm}
+    \end{figure}
+\end{minipage}
+\begin{minipage}{.01\textwidth}
+    \text{\hfill}
+\end{minipage}
+\begin{minipage}{.5\textwidth}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=6cm]{Images/Swish.png}
+    \caption{Fonction swish}
+\end{figure}
+\end{minipage}
+
+Une troisième modification est l'utilisation de \textbf{blocs ResNet} à la place de simples convolutions 2D dans les blocs du UNet (représentés en marron sur la figure \ref{UNet-DDPM}). La convolution 2D de kernel 1x1 pixel permet d'ajuster le nombre de feature maps de la skip layer par rapport à l'enchaînement des 2 couches convolution 2D de kernel 3x3 pixels. Le positional encoding est ajouté entre les 2 couches de convolution formant le bloc ResNet. Par rapport à PixelCNN++, la normalisation utilisée est group normalization au lieu de weight normalization, pour simplifier l'implémentation. La fonction d'activation utilisée est swish, définie ainsi :
+$$\text{swish}(x) = x \text{ sigmoid}(\beta x) \text{ avec $\beta$ valant 1 par défaut.}$$
+
+Depuis ce premier modèle, de nombreux articles ont repris ce U-Net en en modifiant certains aspects pour améliorer les performances ou simplifier l'implémentation, notamment :
+\begin{itemize}
+    \item Modification des dimensions et nombre de couches (réduction de la largeur et augmentation de la profondeur)
+    \item Ajout de modules de self-attention supplémentaires
+    \item Augmentation du nombre d'attention heads
+    \item Modification de l'architecture des blocs ResNet
+    \item Modification de la fonction d'activation
+    \item Alternatives à la group normalization
+    \item etc.
+\end{itemize}
+
+\subsubsection{Résultats}
+
+Pour l'implémentation, nous nous sommes inspirés du \href{https://github.com/awjuliani/pytorch-diffusion}{repository GitHub de awjuliani}, qui a le mérite d'être plus simple à appréhender que celle de \href{https://github.com/lucidrains/denoising-diffusion-pytorch}{Phillip Wang}, bien que moins fidèle au modèle initial. Nous avons testé cette implémentation sur les datasets CIFAR-10 et DTD. Par rapport à l'article initial,
+\begin{itemize}
+    \item Nous avons ajouté une couche de self-attention au milieu du U-Net, lorsque la résolution des images est de 8x8 pixels
+    \item La fonction d'activation utilisée est une Gaussian Error Linear Unit (GELU) \cite{gelu}, dont l'expression est la suivante : \\
+    \begin{minipage}{.5\textwidth}
+        $$\text{GELU}(x) = x \nobreakspace \Phi(x) \parbox[t]{5cm}{ avec $\Phi$ fonction de répartition gaussienne standard}$$
+        $$\text{ou GELU}(x) = x \nobreakspace \dfrac{1}{2}[1 + \text{erf}(\dfrac{x}{\sqrt{2}})]$$
+        Cette fonction peut être approximée par la fonction swish avec $\beta = 1.702$ (i.e. GELU$(x) \sim x \sigma(1.702x)$)
+    \end{minipage}
+    \begin{minipage}{.5\textwidth}
+        \begin{figure}[H]
+            \centering
+            \includegraphics[width=6cm]{Images/GELU.pdf}
+            \caption{Comparaison GELU, ReLU et ELU}
+        \end{figure}
+    \end{minipage}
+    \item Les premières couches de convolution amènent à la création de 64 features maps et non 128 (mais le bottleneck possède bien 512 feature maps). Pour le dataset DTD, les images étant de plus grandes dimensions, et de dimension supérieure à CIFAR-10, elles ont toutes été redimensionnées en résolution 256 x 256 pixels (via RandomCrop lors de la phase de data augmentation dans la création du Dataset Pytorch) et les dimensions \textit{H} et \textit{W} du bottleneck ont été ajustées pour les couches d'attention.
+\end{itemize}
+
+Les premiers résultats obtenus sur CIFAR-10 après 1000 epochs d'entraînement sont affichés ci-dessous (figure \ref{results_ddpm_cifar10}). Les images sont sauvegardées à différents instants $t$ durant le processus d'échantillonnage pour montrer le débruitage progressif
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=14cm]{Results/DDPM_CIFAR10_nonorm.pdf}
+    \caption{Évolution de la génération de 9 images à différents instants $t$ (CIFAR-10)}
+    \label{results_ddpm_cifar10}
+\end{figure}
+
+Les images générées sont de plutôt bonnes qualité par rapport aux images du jeu d'entraînement, surtout lorsqu'on compare ces résultats à ceux obtenus précédemment avec des GANs. En revanche, les couleurs sont très pâles. Les images n'ont pas été normalisées avant l'entraînement du modèle utilisé, ce qui suggère que l'intérêt de la normalisation réside plus dans la qualité des images générées que dans la facilité d'entraînement, tout du moins pour ce dataset simple. La courbe d'évolution de la perte fait également penser que le nombre d'epochs d'entraînement est inutilement élevé.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=10cm]{Results/loss_ddpm_cifar10.png}
+    \caption{Évolution de la perte moyenne au cours de l'entraînement (CIFAR-10)}
+\end{figure}
+Un autre constat est qu'un nombre important de pas de diffusion doivent être effectués pour qu'un niveau de bruit suffisant soit retiré. En effet, on ne commence pas à apercevoir l'image finale avant le pas 650. Ce même constat est à l'origine de propositions faites dans certains articles, notamment Improved DDPM \cite{improved_ddpm}, de modifier l'échelle linéaire de scheduling des $\beta_t$ du processus forward par une échelle cosinus (fonction en cosinus$^2$ en réalité), permettant d'arriver plus rapidement à des images débruitées de bonne qualité.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=17cm]{Images/cosine_scheduling.jpg}
+    \caption{Comparaison d'un scheduling linéaire (en haut) et cosinus (en bas) pour un même nombre $t$ de pas de diffusion}
+\end{figure}
+
+Nous avons réentraîné un modèle DDPM sur CIFAR-10 en normalisant les images. Ci-dessous sont affichées 20 images générées avec ce modèle après 350 epochs d'entraînement et 1000 pas d'échantillonnage. On peut remarquer que le problème de couleurs a disparu, les couleurs semblent même saturées.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=17cm]{Results/DDPM_CIFAR10_norm.pdf}
+    \caption{Images obtenues après normalisation des images (CIFAR-10)}
+\end{figure}
+
+Les résultats obtenus sur le dataset DTD sont également satisfaisants. On constate que la saturation des couleurs augmente au cours de l'entraînement, le modèle précédemment entraîné sur CIFAR-10 a donc très probablement overfitté les données. Une des limites du modèles semble cependant être la diversité des images générées. En effet, le dataset DTD comporte 47 classes diverses, mais les images générées semblent toutes être similaires. Nous verrons par la suite que le conditionnement par du texte permet de s'assurer que le modèle est bien capable de générer des images de l'ensemble de ces classes. 
+
+\begin{adjustwidth}{-2cm}{-2cm}
+\begin{minipage}{1.0\textwidth}
+    \begin{table}[H]
+    \captionsetup{margin={3cm, -2cm}}
+        \centering
+        \begin{tabularx}{400pt}{cc}
+        Epoch 50 &
+        \begin{minipage}{0.9\textwidth}
+        \includegraphics[width=\linewidth]{Results/ddpm_epoch50.jpg}
+        \end{minipage}\\[1.75cm]
+        Epoch 200 &
+        \begin{minipage}{0.9\textwidth}
+        \includegraphics[width=\linewidth]{Results/ddpm_epoch200.jpg}
+        \end{minipage}\\[1.75cm]
+        Epoch 950 &
+        \begin{minipage}{0.9\textwidth}
+        \includegraphics[width=\linewidth]{Results/ddpm_epoch950.jpg}
+        \end{minipage}\\
+        \end{tabularx}
+    \caption{Images générées à partir d'un même bruit initial pour différentes epochs d'entraînement avec 1000 steps de diffusion (DTD). Les caractéristiques de haut niveau sont déjà observables sur les images générées après 50 epochs. La poursuite de l'entraînement entraîne l'apparition de détails / hautes fréquences, et une saturation des couleurs}
+    \end{table}
+\end{minipage}
+\end{adjustwidth}
+
+\subsection{DDIM}
+
+
+
+\clearpage
+\section{Latent Diffusion Models}
+
+Après avoir étudié les premiers modèles de diffusion via l'article DDPM, nous nous sommes penchés sur les modèles permettant de conditionner la génération d'images. Le conditionnement par du texte est actuellement la méthode la plus populaire et la plus simple à mettre en place. Nous nous sommes particulièrement intéressés aux Latent Diffusion Models, qui réalisent les étapes de diffusion dans un espace latent, dont Stable Diffusion est une implémentation open source (code et poids d'entraînement disponibles sur GitHub et HuggingFace), facilement utilisable et personnalisable.
+
+\subsection{Fonctionnement de Stable Diffusion}
+
+La principale motivation derrière les Latent Diffusion Models, proposés en 2021 dans l'article \textit{High-Resolution Image Synthesis with Latent Diffusion Models} \cite{rombach2021highresolution} de l'Université de Munich, est de rendre l'entraînement et l'utilisation des modèles de diffusion moins exigeants en ressources de calcul, en particulier pour des images en haute résolution. La solution présentée consiste à réaliser les pas de diffusion dans l'espace latent d'un autoencodeur, au lieu des les effectuer sur les images (décrit comme "pixel space" dans l'article). Les tenseurs en entrée du U-Net sont donc de faible dimension par rapport aux images initiales, ce qui :
+\begin{itemize}
+    \item Accélère l'entraînement / le finetuning du U-Net, et réduit les besoins en RAM des GPUs utilisés pendant l'entraînement
+    \item Permet d'écourter la durée d'échantillonage, \textbf{indépendamment du scheduler utilisé pour les $\boldsymbol{\beta_t}$}, car chaque passe dans le U-Net est plus rapide. Cette accélération de l'inférence se cumule donc avec toute amélioration de scheduling
+\end{itemize}
+Ce deuxième point est particulièrement intéressant car, comme déjà évoqué, le principal point faible des modèles de diffusion est l'important temps d'échantillonnage nécessaire pour générer une image.
+
+Une autre amélioration apportée par cette article est une proposition de \textbf{mécanisme de conditionnement multimodal via cross-attention}. La figure \ref{stable-diff} présente les 3 composantes du modèles Stable Diffusion : autoencodeur sur la gauche, modèle de diffusion au centre et conditionnement sur la droite.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=15cm]{Images/Archi_stable_diffusion.pdf}
+    \caption{Architecture simplifiée du modèle Stable Diffusion}
+    \label{stable-diff}
+\end{figure}
+
+\subsubsection{Compression perceptuelle des images}
+L'utilisation d'un autoencodeur permet logiquement de réduire la dimension des images de travail, mais introduit également de nouveaux défis lors de l'entraînement du modèle :
+\begin{itemize}
+    \item Comment garantir que les images générées soient de qualité équivalente à des images générées sans autoencodeur ?
+    \item Comment garantir que l'entraînement global du modèle soit simplifié - un des objectifs principaux de l'article reste de démocratiser la synthèse d'images de haute résolution - malgré l'ajout de 2 modèles supplémentaires (encodeur et décodeur) ?
+\end{itemize}
+Pour adresser ces problèmes, les auteurs proposent un entraînement en 2 étapes :
+\begin{enumerate}
+    \item Entraînement d'un autoencodeur variationnel (discret dans certains cas) de manière adversariale
+    \item Entraînement du modèle de diffusion dans l'espace latent (avec les poids de l'autoencodeur gelés)
+\end{enumerate}
+L'intuition derrière cette proposition vient d'une analyse faite sur la capacité de compression d'un modèle de diffusion entraîné sur CelebA-HQ dans l'article \textit{DDPM}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=17cm]{Images/distortion-rate_ddpm.pdf}
+    \caption{Images générées par un DDPM à partir d'une même image bruitée, dans le quadrant en bas à droite, pour différents niveaux de bruit initial}
+    \label{distortion-rate}
+\end{figure}
+
+\begin{adjustwidth}{-0.8cm}{0cm}
+\begin{minipage}{.45\textwidth}
+\vspace{-0.8cm}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=8cm]{Images/Perceptual_semantic_compression.png}
+    \caption{Rate-distortion plot}
+    \label{perceptual-semantic-compression}
+\end{figure}
+\end{minipage}
+\begin{minipage}{.04\textwidth}
+    \text{\hfill}
+\end{minipage}
+\begin{minipage}{.55\textwidth}
+\setlength{\parindent}{1.5em}
+La courbe \ref{perceptual-semantic-compression} emploie des \href{https://en.wikipedia.org/wiki/Rate%E2%80%93distortion_theory}{termes issus de la théorie de l'information} pour décrire les capacités de compression d'un modèle de diffusion entraîné. Dans notre cas, la distorsion est la mesure de la Root Mean Square Error, donc de l'écart calculé au niveau des pixels, entre les images générées et l'image initiale (Share x$_0$ en bas à droite sur la figure \ref{distortion-rate}). Pour chaque bloc de 4 images, la source est Share x$_0$, l'image fournie en entrée (source bruitée entre 0 et 1000 fois) est le récepteur, et l'image générée correspond à la décompression avec pertes de la source. \par
+Le taux (\textit{rate}), calculé ici comme la divergence $KL$ entre $q$ et $p$ normalisée par le nombre de pixels dans une image, correspond à la quantité d'information fournie en entrée du modèle pour reconstruire l'image : des images très bruitées comme Share x$_{1000}$ ou Share x$_{750}$, qui semblent entièrement aléatoires, ont donc un taux proche de 0, alors que l'image Share x$_0$, qui contient déjà toute l'information de la source, a un taux maximal.
+\vspace{0.4cm}
+\end{minipage}
+\end{adjustwidth}
+
+La courbe ci-dessus illustre bien que dans une image, la majorité des pixels contient peu d'information sémantique. La distorsion diminue de manière drastique dans la zone de taux faible. Ceci est interprété comme une phase de \textit{compression sémantique/conceptuelle} : l'ajout de peu d'informations (Share x$_{750}$ ressemble toujours à une image composée uniquement de bruit) permet au modèle de générer des features de haut niveau fidèles à l'image initiale. A contrario, la zone de faible distorsion correspond à une \textit{compression perceptuelle} : un gros apport d'information supplémentaire ne se traduit que par une modification des hautes-fréquences de l'image et un apport faible en information sémantique. \par
+L'allure fortement non linéaire de la courbe laisse à penser qu'il est possible de découpler ces deux étapes de compression pendant l'entraînement et l'inférence du modèle. Les auteurs proposent d'utiliser un autoencodeur entraîné de manière adversariale pour réaliser la compression perceptuelle, car ce type de modèle est très efficace sur cette tâche. Le niveau de compression n'a pas besoin d'être très élevé, car les modèles de diffusion sont de toute évidence également capables de réaliser de la compression perceptuelle, mais suffisant pour un allègement des ressources de calcul nécessaires au modèle de diffusion. Les 2 tâches de compression étant orthogonales, il devrait être possible d'entraîner les deux modèles séparément, ce qui permet d'expérimenter plus facilement sur différentes architectures du modèles de diffusion une fois l'autoencodeur entraîné. \par
+\begin{spacing}{1}
+Le protocole d'entraînement de l'autoencodeur s'inspire de celui réalisé dans l'article VQGAN \cite{VQGAN} (dont Rombach est également l'un des auteurs principaux). La fonction de perte utilisée prend cette forme :
+\end{spacing}
+\large
+\vspace{-0.5cm}
+$$
+L_{autoencodeur} = \min_{\mathcal{E}, \mathcal{D}} \max_{\Psi} (L_{rec}(x, \mathcal{D}(\mathcal{E}(x)) - L_{adv}(\mathcal{D}(\mathcal{E}(x)) + \log(D_{\Psi}) + L_{reg}(x;\mathcal{E}, \mathcal{D}) )
+$$
+\normalsize
+où les différentes fonctions de perte intermédiaires sont définies comme suit :
+\begin{itemize}
+    \item $L_{rec}$: Loss de reconstruction, qui force l'image reconstruite $\mathcal{D}(\mathcal{E}(x)$ à être proche de l'image initiale $x$ et inclut une loss perceptuelle \cite{Perceptual_loss}
+    \item $L_{adv} + \log(D_{\Psi})$ : Loss adversariale
+    \item $L_{reg}$ : Régularisation. 2 types de régularisation testés : KL et VQ
+\end{itemize}
+
+\begin{minipage}{.55\textwidth}
+\setlength{\parindent}{1.5em}
+Les auteurs de l'article ont entraîné plusieurs autoencodeurs en testant différents facteurs de compression $f \in \{1, 2, 4, 8, 16, 32\}$ sur ImageNet. Les résultats sont présentés sur la figure \ref{fid_compression}. La notation LDM-$f$ indique que le modèle a été entraîné avec un facteur de compression $f$. Le facteur 1 indique un entraînement dans l'espace des pixels, i.e. sans utiliser d'autoencodeur. \par
+Pour un nombre de steps d'entraînement fixé à 2 millions, les modèles avec peu ou pas de compression n'ont pas encore convergé (LDM-1 et 2), ceux avec une trop forte compression ont vite convergé vers une mauvaise qualité d'images. Le meilleur compromis semble donc être un facteur compris entre 4 et 16 (d'autres tests réalisés par les auteurs les font finalement opter pour un facteur $f=8$).
+\vspace{0.5cm}
+\end{minipage}
+\begin{minipage}{.01\textwidth}
+    \text{\hfill}
+\end{minipage}
+\begin{minipage}{.45\textwidth}
+    \vspace{-1cm}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=7cm]{Images/Perf_compression_tradeoff.png}
+        \caption{Évolution de la FID pour différents facteurs de compression sur ImageNet}
+        \label{fid_compression}
+    \end{figure}
+\end{minipage}
+\noindent Pour de la génération text-to-image (seul cas d'usage que nous ayons testé), Stable Diffusion utilise un autoencodeur entraîné :
+\begin{enumerate}
+    \item Avec un \textbf{facteur de compression de 8}
+    \item Avec une \textbf{régularisation de Kullback-Leibler} et un coefficient de régularisation assez faible de $\boldsymbol{10^-6}$
+    \item Sur le \textbf{dataset OpenImages} \cite{OpenImages}. Il s'agit d'un dataset contenant 9.2 millions d'images annotées permettant à la fois des tâches de classification d'images, de détection d'objets et de détection de relations visuelles, ce qui explique son intérêt pour entraîner un modèle multimodal
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=15cm]{Images/OpenImages.pdf}
+        \caption{Exemple d'images annotées issues du dataset OpenImages}
+    \end{figure}
+\end{enumerate}
+D'autres autoencodeurs entraînés avec des facteurs de compression différents et/ou avec une régularisation QV sont également disponibles sur \href{https://github.com/CompVis/stable-diffusion/tree/main/models/first_stage_models}{le GitHub de Stable Diffusion v1}, mais nous ne les avons pas testé. \par
+Les images en sortie du décodeur sont de dimension 512x512 avec Stable Diffusion v1, et 768x768 avec StableDiffusion v2. Pour une image d'entrée de dimension $H \times W \times 3$, les tenseurs de l'espace latent sont de dimension \Large $\sfrac{H}{f}$ \normalsize $\times$ \Large $\sfrac{W}{f}$ \normalsize $\times 4$.
+
+\subsubsection{Mécanisme de conditionnement}
+
+Stable Diffusion permet de conditionner la génération d'images via plusieurs modalités : texte, images ou semantic map. Un encodeur, noté $\tau_{\theta}$ sur la figure \ref{stable-diff}, est utilisé pour projeter le conditionnement fourni en entrée $y$ dans un espace d'embeddings. L'embedding obtenu est noté $\tau_{\theta}(y)$.\\
+Pour des tâches de image-to-image translation, synthèse sémantique, super-résolution ou inpainting, l'autoencodeur est utilisé avec une régularisation VQ, et les images de conditionnement sont juste projetées dans l'espace latent et concaténées aux représentations des images d'entraînement. Pour de la génération text-to-image , $\tau_{\theta}$ est le text encoder d'un modèle de type CLIP \cite{CLIP}. Le texte est convertit en tokens via l'algorithme WordPiece \cite{WordPiece}, aussi connu sous le nom de BERT-tokenizer, avant d'être converti en tenseur par $\tau_{\theta}$. Le mécanisme de cross-attention représenté sur la figure \ref{cross-attention} est alors utilisé au niveau des couches d'attention du U-Net (cf. figure \ref{UNet-DDPM} ou blocs QKV sur la figure \ref{stable-diff}) pour guider la génération d'images.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=11cm]{Images/qkv.pdf}
+    \caption{Mécanisme de cross-Attention}
+    \label{cross-attention}
+\end{figure}
+Dans le cas de Stable Diffusion, \textbf{les représentations d'images sont utilisées pour générer les vecteurs de Query} (vecteurs bleus sur la figure), et sont donc associés à la matrice $W_Q$. \textbf{Les représentations textuelles servent à générer les vecteurs de Key et Value} (vecteurs rouges sur la figure) et sont donc associés aux matrices $W_K$ et $W_V$. L'attention est calculée comme le produit scalaire normalisé de la Query avec la Key, et est utilisée en tant que coefficient de pondération de la Value pour générer le tenseur de sortie. \par
+Le mécanisme de cross attention est également utilisé dans le cadre de la génération layout-to-image : le conditionnement est réalisé par une image contenant une bounding box et un label par objet à représenter.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=13cm]{Images/layout-to-image.pdf}
+    \caption{Exemple de génération layout-to-image conditionnée via cross-attention}
+\end{figure}
+
+\noindent Pour la synthèse text-to-image, la principale différence entre Stable Diffusion v1.x et Stable Diffusion 2.x provient de l'encodeur utilisé :
+\begin{itemize}
+    \item Stable Diffusion v1.x utilise un modèle CLIP ViT-L/14 \cite{CLIP} (ViT Large $\sim$ 300M de paramètres pour le ViT \cite{ViT}, taille de patchs 14x14 pixels). Il s'agit du premier type de modèle basé sur des Transformers \cite{transformers} à apprendre conjointement des embeddings d'images et de texte. Il a été développé et rendu public (code et poids d'entraînement) par OpenAI début 2021 et offre de très bonnes performances, mais il a été entraîné sur des données propriétaires et n'est pas disponible pour des tailles supérieures à Large.
+    \item Stable Diffusion v2.x utilise OpenCLIP ViT-H/14 \cite{OpenCLIP} (ViT Huge $\sim$ 600M de paramètres pour le ViT, taille de patchs 14x14 pixels) à la place. Le modèle global est environ 5 fois plus gros que le modèle CLIP utilisé dans la v1.x. Il s'agit d'une réimplémentation open-source de CLIP entraînée sur le dataset LAION5B \cite{LAION5B} en filtrant les images NSFW (Not Safe For Work) et en ne gardant que les images ayant un bon \href{https://github.com/christophschuhmann/improved-aesthetic-predictor}{score esthétique}.
+\end{itemize}
+
+
+\subsubsection{Diffusion dans l'espace latent}
+\begin{spacing}{1}
+En ce qui concerne le modèle de diffusion en lui-même, son objectif est finalement similaire à celui d'un modèle DDPM classique, ce qui est facilement observable en comparant les fonctions de perte des 2 modèles :
+\end{spacing}
+\vspace{-0.5cm}
+\large
+\begin{align*}
+L_{DPPM} &= \mathbb{E}_{x, \epsilon \sim \mathcal{N}(0,1), t} [\lVert \epsilon - \epsilon_{\theta}(x_t, t) \rVert_2^2] &\tag*{ \normalsize modèle DDPM \large}\\
+L_{LDM} &= \mathbb{E}_{\mathcal{E}(x), y, \epsilon \sim \mathcal{N}(0,1), t} [\lVert \epsilon - \epsilon_{\theta}(z_t, t, \tau_{\theta}(y)) \rVert_2^2] &\tag*{ \normalsize modèle LDM \large}
+\end{align*}
+\normalsize
+Le conditionnement de l'espérance ne se fait plus sur $x$, l'image originale, mais sur $\mathcal{E}(\textbf{x})$, sa représentation dans l'espace latent, et le bruit prédit dépend à présent aussi de l'embedding de conditionnement $\tau_{\theta}(y)$. \par
+\begin{spacing}{1}
+Pour l'entraînement de Stable Diffusion v2.x, certains modèles fournis ont été entraînés avec une fonction de perte alternative proposée dans la section 4 de cet article \cite{prog_distillation}, nommée v-objective ou v-prediction. Cette fonction cherche à prédire la variable $v \equiv \alpha_t \epsilon - \sigma_t x$ , et permet notamment de réaliser des distillations du modèle initial pour entraîner des modèles qui échantillonnent plus rapidement. La fonction de perte associée est :
+\end{spacing}
+\vspace{-0.3cm}
+\large
+$$ L_{\theta} = \lVert v_t - \hat{v}_t \rVert_2^2$$
+\normalsize
+
+\subsection{Entraînements de LDMs}
+
+Nous avons entraîné des modèles de diffusion latents conditionnés sur du texte en reprenant des \href{https://huggingface.co/stabilityai/stable-diffusion-2-1-base}{modèles Stable Diffusion préentraînés disponibles sur HuggingFace}, et les scripts d'entraînement fournis \href{https://github.com/huggingface/diffusers/tree/main/examples}{sur le GitHub de la librairie diffusers}. Nous avons préféré utiliser des modèles déjà préentraînés plutôt que de réaliser un entraînement à partir de zéro. En effet, bien que les LDM soient des modèles de taille raisonnable comparés aux autres modèles de diffusion, un entraînement complet nécessite tout de même plusieurs jours de calculs sur un seul GPU (voire semaines si plusieurs versions d'autoencodeurs sont comparées), et créerait un modèle moins riche car l'alignement avec le text encoder serait fait sur un nombre limité de concepts (le dataset DTD ne contient que 5600 images, à comparer aux milliards de paires image-label utilisées pour entraîner Stable Diffusion). Nous pouvons ainsi tirer parti du fort \textit{prior} sémantique appris lors du préentraînement et vérifier si la génération d'images est aussi efficace pour des concepts non inclus dans les images d'entraînement (via le dataset Safran notamment). \par
+Nous avons testé différentes méthodes d'entraînement, en nous intéressant plus particulièrement à l'efficacité de l'entraînement (compromis entre qualité d'images générées et ressources de calcul utilisée pour l'entraînement). Nos résultats sont présentés dans les sous-sections ci-dessous.
+
+\subsubsection{Finetuning classique}
+\label{sec:Finetuning_classique}
+
+Cette méthode d'entraînement est la plus simple à appréhender. Elle consiste à geler les paramètres de l'autoencodeur et du text encoder, et à n'entraîner que les paramètres du U-Net (comme un entraînement classique initialisé depuis des poids préentraînés). \par
+Nous avons testé cette méthode sur le dataset DTD. L'entraînement a duré environ \textbf{16 heures pour 334 epochs d'entraînement sur les 5639 images du jeu de données sur 1 GPU A100 avec 40Go de RAM}, avec une taille de batch effective de 128 (34/40 Go de RAM occupés). Pour chaque image, le texte fourni était la concaténation de la chaîne de caractère "dtd\_" et de la classe de l'image (e.g. dtd\_braided, dtd\_cobwebbed, dtd\_spiralled, ...). L'ajout de "dtd\_" devant le nom de la classe permettait de créer un nouveau mot unique servant de prompt pour générer spécifiquement une image à partir du dataset DTD une fois l'entraînement terminé. Sans cette "astuce", il aurait été impossible de savoir si l'image générée était le résultat de notre finetuning ou de l'entraînement initial (les noms de classe du dataset DTD sont tous des mots courants de la langue anglaise, pour lesquels le modèle dispose déjà d'une représentation suite à l'entraînement initial de Stable Diffusion). \par
+Une autre astuce utilisée pendant l'entraînement est la \textbf{technique dite du "Offset Noise"}. Cette technique part du constat que les modèles de diffusion sont incapables de créer des images presque entièrement blanches ou presque entièrement noires : la moyenne de la valeur des pixels semble toujours être autour de 0.5 (pour des valeurs de pixels ramenées entre 0 et 1). La solution proposée dans l'article de blog \cite{offset_noise} consiste à \textbf{ajouter un bruit constant pour tous les pixels d'une même feature map lors du forward process dans l'espace latent}. En code Python, la nouvelle forme du bruit peut s'exprimer ainsi :
+\begin{python}
+# Initialement
+noise = torch.randn_like(latents)
+# Avec offset
+offset_noise = torch.randn_like(latents) +
+               0.1 * torch.randn(latents.shape[0], latents.shape[1], 1, 1)
+\end{python}
+
+Pour comprendre ce qui motive cette modification, il est intéressant de se pencher sur l'impact du bruit ajouté dans le processus forward sur les différentes fréquences présentes dans une image.
+\begin{adjustwidth}{-1.5cm}{-2cm}
+\begin{minipage}{1.0\textwidth}
+    \begin{table}[H]
+    \captionsetup{margin={1.5cm, -1.5cm}}
+        \centering
+        \begin{tabularx}{400pt}{cc}
+        t=0 &
+        \begin{minipage}{0.9\textwidth}
+        \includegraphics[width=\linewidth]{Images/noise_offset_0.pdf}
+        \end{minipage}\\
+        t=20 &
+        \begin{minipage}{0.9\textwidth}
+        \includegraphics[width=\linewidth]{Images/noise_offset_20.pdf}
+        \end{minipage}\\
+        t=100 &
+        \begin{minipage}{0.9\textwidth}
+        \includegraphics[width=\linewidth]{Images/noise_offset_100.pdf}
+        \end{minipage}\\
+        t=199 &
+        \begin{minipage}{0.9\textwidth}
+        \includegraphics[width=\linewidth]{Images/noise_offset_199.pdf}
+        \end{minipage}\\
+        \end{tabularx}
+    \caption{Impact de l'ajout progressif d'un bruit gaussien sur les différentes fréquences d'une même image. Dans la colonne de gauche est représentée l'image complète pour différents niveaux d'ajout de bruit. Les images de droite sont les reconstructions de certaines bandes de fréquence de cette image après calcul via Transformée de Fourier. Les images sont placées de gauche à droite par bandes de fréquence croissante (basses fréquences à gauche, hautes fréquences à droite)}
+    \label{noise_offset}
+    \end{table}
+\end{minipage}
+\end{adjustwidth}
+
+\indent Le tableau \ref{noise_offset} illustre le fait que les hautes fréquences sont détruites beaucoup plus rapidement que les basses fréquences par ajout progressif de bruit sur une image : les plus hautes fréquences ne sont plus visibles au bout de 20 steps de bruit, alors que les plus basses fréquences semblent inchangées au bout de 200 steps. Au bout de 1000 steps de diffusion (valeur par défaut utilisée dans les modèles de diffusion), les basses fréquences de l'image n'ont donc pas entièrement été détruites. Par conséquent, le modèle n'apprend pas à reconstruire entièrement les basses fréquences, puisqu'une partie de l'information qu'elles contiennent est encore présente à la fin des étapes de bruitage. Le modèle ne peut donc pas générer des images contenant des basses fréquences avec des valeurs éloignées de la moyenne du bruit fourni en entrée du processus reverse (d'où l'observation initiale). Une solution serait de rajouter des étapes de bruitage pendant l'entraînement, mais cela forcerait un temps d'échantillonage plus long en inférence... L'ajout de bruit proposé force la destruction des basses fréquences lors du processus forward, et donne donc plus de liberté au modèle en phase d'inférence, sans impact sur la durée d'échantillonnage. Cette astuce semble produire des résultats convenables, mais n'est pas au goût de tous, notamment des auteurs de \cite{lin2023common}, qui lui reprochent notamment de rompre la condition i.i.d. du bruit appliqué aux pixels, et proposent une autre solution pour adresser le même problème.
+
+Des exemples d'images générées avec cette méthode d'entraînement sont affichées dans le tableau \ref{finetune}, les images sont de très bonne qualité. Pour un prompt donné, on remarque cependant que les images générées sont très similaires (pour dtd\_braided ou dtd\_wrinkled par exemple). Toutefois, la combinaison de nos prompts avec d'autres concepts déjà connus du modèle permet de vérifier que le modèle a bien appris de nouveaux concepts et ne se contente pas de regénérer la même image du dataset. Ainsi, le prompt "dtd\_braided brioche" génère bien des brioches tressées, "dtd\_spiralled galaxy" génère des galaxies en forme de spirale et "dtd\_wrinkled old person" génère bien des personnes âgées très ridées. Nous n'avons pas expérimenté avec l'ensemble des 47 classes du dataset, mais ces résultats semblent suggérer que l'entraînement a permis de faire apprendre correctement les nouveaux concepts de DTD sans catastrophic forgetting / overfit.
+\begin{adjustwidth}{-2.5cm}{-2cm}
+\begin{minipage}{1.0\textwidth}
+    \begin{table}[H]
+    \captionsetup{margin={3cm, -2.5cm}}
+        \centering
+        \begin{tabularx}{400pt}{cc}
+        \textbf{Prompt} & \textbf{Échantillon d'images générées}\\
+        dtd\_braided &
+        \begin{minipage}{0.8\textwidth}
+        \includegraphics[width=\linewidth]{Results/Finetune_braided.png}
+        \end{minipage}\\[0.9cm]
+        dtd\_braided brioche &
+        \begin{minipage}{0.8\textwidth}
+        \includegraphics[width=\linewidth]{Results/Finetune_brioche.png}
+        \end{minipage}\\[0.9cm]
+        dtd\_cobwebbed &
+        \begin{minipage}{0.8\textwidth}
+        \includegraphics[width=\linewidth]{Results/Finetune_cobwebbed.png}
+        \end{minipage}\\[0.9cm]
+        dtd\_spiralled &
+        \begin{minipage}{0.8\textwidth}
+        \includegraphics[width=\linewidth]{Results/Finetune_spiralled.png}
+        \end{minipage}\\[0.9cm]
+        dtd\_spiralled galaxy &
+        \begin{minipage}{0.8\textwidth}
+        \includegraphics[width=\linewidth]{Results/Finetune_galaxy.png}
+        \end{minipage}\\[0.9cm]
+        dtd\_honeycombed &
+        \begin{minipage}{0.8\textwidth}
+        \includegraphics[width=\linewidth]{Results/Finetune_honeycombed.png}
+        \end{minipage}\\[0.9cm]
+        dtd\_wrinkled &
+        \begin{minipage}{0.8\textwidth}
+        \includegraphics[width=\linewidth]{Results/Finetune_wrinkled.png}
+        \end{minipage}\\[0.9cm]
+        dtd\_wrinkled old person &
+        \begin{minipage}{0.8\textwidth}
+        \includegraphics[width=\linewidth]{Results/Finetune_old_person.png}
+        \end{minipage}\\
+        \end{tabularx}
+    \caption{Images générées à partir des prompts dans la colonne de gauche après finetuning de Stable Diffusion sur DTD}
+    \label{finetune}
+    \end{table}
+\end{minipage}
+\end{adjustwidth}
+
+Une des limites de l'approche est visible à travers la tokenisation WordPiece \cite{WordPiece} utilisée. Les prompts de type "dtd\_\textit{class}" sont décomposés en tokens de la manière suivante :
+\begin{itemize}[noitemsep,topsep=0pt,parsep=0pt,partopsep=0pt]
+    \item dtd\_honeycombed $\rightarrow$ \texttt{['d', 'td</w>', '\_</w>', 'honey', 'com', 'bed</w>']}
+    \item dtd\_braided $\rightarrow$ \texttt{['d', 'td</w>', '\_</w>', 'braided</w>']}
+    \item dtd\_spiralled $\rightarrow$ \texttt{['d', 'td</w>', '\_</w>', 'spir', 'alled</w>']}
+    \item ...
+    \item dtd\_class $\rightarrow$ \texttt{['d', 'td</w>', '\_</w>', 'class</w>']}
+\end{itemize}
+où les tokens générés à partir de la classe sont des concepts déjà connus du modèle. Il est donc difficile de savoir si les bons résultats obtenus sont entièrement attribuables à la méthode d'entraînement, ou s'ils sont en grande partie dûs à la connaissance antérieure du modèle d'une partie des tokens utilisés.
+
+La méthode de finetuning classique produit donc de très bons résultats, mais nécessite tout de même l'accès à de bons GPUs pour produire des résultats en un temps raisonnable (ce qui n'a plus été notre cas sur la fin du projet à cause de problèmes de disques sur les serveurs de l'école). Nous avons donc testé d'autres approches en parallèle pour trouver des méthodes moins gourmandes en ressources de calcul.
+
+\subsubsection{Textual Inversion}
+
+Une technique de finetuning populaire d'un LDM conditionné sur du texte est \textbf{Textual Inversion}, introduite dans l'article \cite{Textual_Inversion}. Cette méthode, originale pour entraîner un modèle générant des images, consiste à finetuner \textit{uniquement une partie du text encoder} en gardant le reste du modèle gelé, comme illustré sur la figure \ref{finetune_ti}.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=13cm]{Images/Finetuning_Textual_Inversion.pdf}
+    \caption{Paramètres entraînés lors de l'utilisation de Textual Inversion}
+    \label{finetune_ti}
+\end{figure}
+
+Le but de la méthode est de générer un ou plusieurs nouveaux embeddings textuels pour un concept particulier. Trois à cinq images d'un même concept suffisent pour entraîner le text encoder, qui permet ensuite la génération d'images incluant le nouveau concept dans le cas d'un objet, ou s'en inspirant en traitant le concept comme un style. 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{Images/bird_textual_inversion.pdf}
+    \caption{Exemple d'images générées à partir d'une statuette d'oiseau, traitée à la fois comme un objet (dans la peinture) et comme un style (maison)}
+\end{figure}
+
+\begin{spacing}{1}
+Plus en détails, pour réaliser l'entraînement, un caractère générique ($S_*$ sur la figure \ref{principe_ti}) est utilisé pour décrire textuellement le nouveau concept. Une fois tokenisé, ce caractère est utilisé pour créer un vecteur, noté $v$, via la matrice d'embedding du text encoder. Lors de l'entraînement, les seuls paramètres non gelés (pour lesquels \texttt{require\_grad = True}) sont les composantes du vecteur $v$. Seule la modification de ces valeurs permet l'alignement entre le texte d'un côté et les images de l'autre. L'objectif d'entraînement reste le même que pour la modèle Stable Diffusion, qui dans ce cas se réécrit ainsi:
+\end{spacing}
+\large
+\vspace{-0.3cm}
+$$ v_* = \arg \min_v \mathbb{E}_{\mathcal{E}(x), y, \epsilon \sim \mathcal{N}(0,1), t} [\lVert \epsilon - \epsilon_{\theta}(z_t, t, c_{\theta}(y)) \rVert_2^2$$
+\normalsize
+Cette méthode, qui s'apparente finalement plus à du prompt-tuning qu'à du finetuning, produit donc uniquement \textbf{un embedding optimal du nouveau concept : les poids du modèle ne sont pas modifiés} !
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=13cm]{Images/textual_inversion.pdf}
+    \caption{Principe de Textual Inversion}
+    \label{principe_ti}
+\end{figure}
+
+Nous avons testé cette méthode d'entraînement sur le dataset Safran (table \ref{dataset_Safran}) pour apprendre 3 concepts : dry, thickness et warp. Pour chacun des concepts, nous avons utilisé 3 images de chaque type tirées au hasard, soit 9 images par concept (e.g. 3 "dry thickness", 3 "dry warp" et 3 "dry weft" pour le concept \textit{dry}). Le \href{https://github.com/huggingface/diffusers/tree/main/examples/textual_inversion}{script fourni par HuggingFace} prend en arguments :
+\begin{itemize}
+    \item le type de concept à apprendre : \texttt{object} ou \texttt{style}. Nous avons utilisé le type \texttt{object} pour les 3 concepts
+    \item le token générique à utiliser pour représenter le nouveau concept, écrit entre chevrons. Nous avons utilisé le format <\textit{concept}-slice> pour les 3 concepts
+    \item le token d'initialisation : vecteur d'embedding avec lequel le nouveau vecteur va être initialisé. Nous avons utilisé le nom du concept comme token d'initialisation (i.e. "dry" pour <dry-slice>, "thickness" pour <thickness-slice>", etc.)
+\end{itemize}
+L'entraînement dure environ \textbf{1 heure 20 par concept pour 40 epochs sur 1 GPU A100 avec 40Go de RAM}, avec une taille de batch effective de 16 (23/40 Go de RAM occupés). Les résultats obtenus sont présentés dans la table \ref{results_ti}. \par
+On constate que les résultats sont très inégaux en fonction du concept d'entraînement. Pour \textbf{dry}, le modèle a déjà une connaissance bien ancrée du concept initial, comme le prouvent les images générées à la première epoch (sol desséché typique d'un environnement désertique). Après 40 epochs, les images générées ressemblent principalement à des images de type "thickness", mais la courbure des lignes horizontales rappelle plutôt les images de type "warp" ou "weft" : le modèle a semble-t-il fait une fusion des images thickness, warp et weft lors de l'apprentissage. Les images sont cependant de bonne qualité, relativement proches des images du dataset et éloignées du token d'initialisation (ce qui illustre bien l'impact de l'entraînement). Les résultats sont encore plus satisfaisants pour le concept \textbf{thickness}, pour lequel le modèle ne ne semble pas avoir de définition aussi précise initialement (cf images générées à l'epoch 1), mais qui aboutit à des images de très bonnes qualités après 40 epochs d'entraînement. En revanche, les résultats pour le concept \textit{warp} sont beaucoup plus mitigés. Le modèle semble avoir une conception initiale assez forte du concept (bien qu'éloignée du concept recherché) : les 4 images générées après 1 epoch sont très semblables. Mais à partir de 20 epochs, l'entraînement semble avoir convergé vers un concept assez éloigné du dataset.
+\begin{table}[H]
+    \centering
+    \begin{tblr}{colspec={X[2,c]X[-1,c]X[5,c]},
+    rowhead = 1,
+    row{1} = {font=\bfseries},
+    cell{2}{1} = {r=3}{White!70!BurntOrange},
+    cell{5}{1} = {r=3}{White!70!PineGreen},
+    cell{8}{1} = {r=3}{White!70!NavyBlue}
+    }
+    Prompt & Epoch & Échantillon d'images générées\\
+    \large A \textbf{<dry-slice>} of a carbon composite material & 1 & 
+    \begin{minipage}{0.55\textwidth}
+    \includegraphics[width=\linewidth]{Results/dry_ti_01.jpg}
+    \end{minipage}\\[-0.15cm]
+    & 20 & 
+    \begin{minipage}{0.55\textwidth}
+    \includegraphics[width=\linewidth]{Results/dry_ti_20.jpg}
+    \end{minipage}\\[-0.15cm]
+    & 40 & 
+    \begin{minipage}{0.55\textwidth}
+    \includegraphics[width=\linewidth]{Results/dry_ti_40.jpg}
+    \end{minipage}\\
+    \large A \textbf{<thickness-slice>} of a carbon composite material & 1 & 
+    \begin{minipage}{0.55\textwidth}
+    \includegraphics[width=\linewidth]{Results/thickness_ti_01.jpg}
+    \end{minipage}\\[-0.15cm]
+    & 20 & 
+    \begin{minipage}{0.55\textwidth}
+    \includegraphics[width=\linewidth]{Results/thickness_ti_20.jpg}
+    \end{minipage}\\[-0.15cm]
+    & 40 & 
+    \begin{minipage}{0.55\textwidth}
+    \includegraphics[width=\linewidth]{Results/thickness_ti_40.jpg}
+    \end{minipage}\\
+    \large A \textbf{<warp-slice>} of a carbon composite material & 1 & 
+    \begin{minipage}{0.55\textwidth}
+    \includegraphics[width=\linewidth]{Results/warp_ti_01.jpg}
+    \end{minipage}\\[-0.15cm]
+    & 20 & 
+    \begin{minipage}{0.55\textwidth}
+    \includegraphics[width=\linewidth]{Results/warp_ti_20.jpg}
+    \end{minipage}\\[-0.15cm]
+    & 40 & 
+    \begin{minipage}{0.55\textwidth}
+    \includegraphics[width=\linewidth]{Results/warp_ti_40.jpg}
+    \end{minipage}\\
+    \end{tblr}
+    \caption{Images générées à partir des prompts dans la colonne de gauche après finetuning via Textual Inversion sur DTD pour différentes epoch d'entraînement}
+    \label{results_ti}
+\end{table}
+\vspace{-0.5cm}
+Cette méthode est donc intéressante car elle permet de faire générer un nouveau concept à un modèle Stable Diffusion avec un entraînement relativement rapide / peu coûteux en ressources. Les embeddings générés sont facilement partageables et combinables, générer une images en intégrant plusieurs nouveaux embeddings est très facile, ce qui en fait une méthode populaire dans les communautés utilisant Stable Diffusion comme \href{https://civitai.com/}{civitai}. Cependant, la qualité des images générées est hétérogène, et pas toujours optimale. S'agissant d'une méthode qui s'appuie uniquement sur le text encoder, elle est particulièrement sensible aux prompts utilisés / tokens d'initialisation, et peut avoir du mal à apprendre des concepts éloignés de son contexte d'entraînement (comme c'est le cas avec warp). Le script de HuggingFace permet l'apprentissage de plusieurs embeddings pour un seul concept, ce qui peut potentiellement améliorer la qualité des images générées. Trouver et optimiser des prompts efficaces étant notoirement complexe, nous avons préféré tester d'autres approches plutôt que de chercher à optimiser les résultats avec cette méthode.
+
+\subsubsection{DreamBooth}
+
+Une approche aux objectifs similaires à Textual Inversion est \textit{Dreambooth}, décrite dans un article de Google \cite{Dreambooth} également paru en 2022. Le but de la méthode est d'intégrer un nouveau concept dans le modèle Stable Diffusion de manière efficace (entraînement rapide et peu couteux, besoin de quelques images uniquement). Contrairement à Textual Inversion, les poids du modèle sont ici bien modifiés : par défaut \href{https://github.com/huggingface/diffusers/tree/main/examples/dreambooth}{le script d'HuggingFace} permet de finetuner le U-Net pour se conformer à l'article, mais le finetuning du text encoder peut également être activé via une option, ce qui produit en général de meilleurs résultats. Les paramètres de l'autoencodeur sont dans tous les cas gelés, une option permet même d'en désactiver l'utilisation (la diffusion a alors lieu dans le pixel space).
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=13cm]{Images/Finetune_Dreambooth.pdf}
+    \caption{Paramètres entraînés lors de l'utilisation de DreamBooth}
+\end{figure}
+\vspace{-0.5cm}
+La méthode proposée s'apparente à du finetuning classique, à l'exception près que seules 3 à 5 images sont suffisantes pour faire apprendre un nouveau concept au modèle. Contrairement aux difficultés rencontrées pour faire apprendre de nouveaux concepts à des GANs en few-shot learning, les latent diffusion models semblent capables d'intégrer de nouvelles informations sans overfitter ni oublier le \textit{prior} sémantique appris par le modèle, \textbf{à condition de bien choisir le prompt utilisé pendant l'entraînement}. Les auteurs de l'article ont observé de bons résultats en utilisant des prompts (en anglais) de la forme "a [identifier] [class noun]" où
+\begin{itemize}
+    \item \textbf{identifier} est un identifiant unique qui va servir à caractériser le nouveau concept. Contrairement à Textual inversion, l'entraînement n'insère pas de nouveau concept dans le dictionnaire d'embeddings du text encoder. Ainsi, l'identifiant utilisé doit perdre le sens qui y était attaché pour se lier au nouveau concept présent dans les images d'entraînement. Les auteurs mettent donc en avant l'importance de choisir un identifiant qui ait un faible \textit{prior} à la fois dans le modèle de langue et dans le modèle de diffusion utilisé. Ils déconseillent de générer un identifiant à partir de caractères aléatoires (eg "xxy5syt00"), car la tokenisation WordPiece \cite{WordPiece} risque de séparer les lettres, et de générer des embeddings pour lesquels le modèle a déjà un fort \textit{prior}. A la place, ils proposent de chercher les tokens rares dans un grand corpus de texte et d'utiliser les mots générant ces tokens comme identifiants. Le script d'HuggingFace propose d'utiliser \textit{sks} comme mot pour le nouveau concept car il s'agit d'un mot rare. Cela semble cependant poser problème dans certains cas, \href{https://github.com/XavierXiao/Dreambooth-Stable-Diffusion/issues/71}{comme décrit dans cette issue GitHub}, car le SKS est carabine crée par un concepteur d'arme soviétique en 1945. Transformer le mot initial en y insérant du leet semble être une alternative efficace.
+    \item \textbf{class noun} est une description approximative de la classe à laquelle appartient le nouveau concept (e.g. chien, chat, horloge, etc.). Elle peut être choisie par l'utilisateur ou proposée par un classifieur. Les auteurs de l'article constatent que donner une mauvaise classe, ou ne pas en préciser du tout dans le prompt, augmente le temps d'entraînement nécessaire pour la convergence, et le risque de dérive linguistique, tout en faisant diminuer les performances. Choisir une classe appropriée est donc nécessaire pour obtenir de bons résultats, le but étant de tirer profit du \textit{prior} sémantique déjà inclus dans le modèle pour guider l'apprentissage.
+\end{itemize}
+
+Malgré ces précautions, il arrive tout de même que l'entraînement conduise à de la dérive linguistique (en particulier pour du finetuning sur des datasets de visages si l'on en croit \href{https://huggingface.co/blog/dreambooth#tldr-recommended-settings}{ce blogpost d'HuggingFace}). La dérive linguistique est un phénomène à l'origine observé dans les modèles de langage, où un modèle pré-entraîné sur un grand corpus de textes et affiné par la suite pour une tâche spécifique perd progressivement la connaissance syntaxique et sémantique de la langue. Dans le contexte des modèles de diffusion, le finetuning sur quelques images d'un nouveau concept fait progressivement oublier au modèle comment générer des images de la même classe que le nouvel objet d'entraînement. Les auteurs ajoutent donc un nouveau terme de régularisation à la fonction de perte, qu'ils nomment \textbf{Prior Preservation Loss}. L'idée est de générer des images de la même classe que le nouveau concept en amont du finetuning, et de forcer les nouvelles images générées par le modèle au cours de l'entraînement à rester proche de ces images (donc à ne pas dégénérer en ne créant que des images du nouveau concept lorsque la classe plus générale est requêtée). La figure \ref{losses_dreambooth} illustre le calcul de ces 2 termes de la fonction de perte :
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=11cm]{Images/prior_preservation_loss.pdf}
+    \caption{Illustration des 2 termes de la fonction de perte utilisée dans Dreambooth}
+    \label{losses_dreambooth}
+\end{figure}
+
+La fonction de perte utilisée prend finalement cette forme :
+\large
+$$L = \mathbb{E}_{\textbf{x}, \textbf{c}, \boldsymbol{\epsilon}, \boldsymbol{\epsilon}', t} [\underbrace{w_t \lVert \hat{\textbf{x}}_{\theta}(\alpha_t \textbf{x} + \sigma_t  \boldsymbol{\epsilon},  \textbf{c}) - \textbf{x}\rVert_2^2}_{\text{Reconstruction Loss}} + \underbrace{\lambda w_{t'} \lVert \hat{\textbf{x}}_{\theta}(\alpha_{t'} \textbf{x}_{\text{pr}} + \sigma_{t'}  \boldsymbol{\epsilon}',  \textbf{c}_{\text{pr}}) - \textbf{x}_{\text{pr}}\rVert_2^2}_{\text{Prior Preservation Loss}}]$$
+\normalsize
+où $\textbf{x}_{\text{pr}}$ représente les images de la classe à préserver (dog sur la figure \ref{losses_dreambooth}), $\textbf{c}_{\text{pr}}$ correspond au prompt de la classe à préserver ("dog"), $\textbf{x}$ correspond aux images du nouveau concept et $\textbf{c}$ correspond à l'identifiant du nouveau concept ("[V]" sur la figure \ref{losses_dreambooth}). En pratique, un $\lambda$ de 1 semble être efficace.
+
+Nous avons testé cette méthode d'entraînement sur la classe \textit{zigzagged} du dataset DTD, qui contient 120 images. Nous avons comparé plusieurs paramètres d'entraînement :
+\begin{enumerate}
+    \item Entraînement du U-Net et du text encoder sur les 120 images de la classe sans prior preservation loss. L'entraînement dure \textbf{58 minutes pour 800 epochs sur 1 GPU A100}
+    \item Entraînement du U-Net et du text encoder sur les 120 images de la classe avec prior preservation loss. L'entraînement dure environ \textbf{1 heure 30 pour 800 epochs sur 1 GPU A100} et \textbf{10 minutes pour générer 200 images de la classe \textit{texture} à préserver}
+    \item Entraînement du U-Net et du text encoder sur 10 images sélectionnées aléatoirement sans prior preservation loss. L'entraînement dure \textbf{12 minutes pour 800 epochs sur 1 GPU A100}
+\end{enumerate}
+
+Dans tous les cas, le prompt d'entraînement est "a dtd\_zigzagged texture" (dtd\_zigzagged est l'\textbf{identifier}, texture le \textbf{class noun}), le batch size est de 128 et le learning rate de $2 \times 10^{-6}$. \par
+Avec la $1^{\text{ère}}$ méthode, les résultats obtenus sont déjà de très bonne qualité au bout de 99 epochs (~8 minutes d'entraînement)
+\vspace{-0.5cm}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=10cm]{Results/dreambooth_120_noprior_99e.jpg}
+    \caption{Images générées avec le prompt "a dtd\_zigzagged texture" au bout de 99 epochs d'entraînement}
+\end{figure}
+\vspace{-0.5cm}
+Cependant, le modèle semble avoir subi une dérive linguistique. Les concepts ont été mélangés suite à l'apprentissage, comme l'illustrent les images suivantes : lorsque le prompt demande des zèbres avec des rayures en zigzag, des zigzags noirs et blancs sont générés mais pas de zèbres; lorsque le prompt demande 2 zèbres (sans zigzag), des hybrides de zèbre et de zigzags sont générés :
+\begin{table}[H]
+    \centering
+    \begin{tblr}{colspec={X[1,l]X[8,c]},
+    rowhead = 1,
+    row{1} = {font=\bfseries},
+    rowsep = 1pt
+    }
+    Prompt & Échantillon d'images générées \\
+    Zebras with dtd\_zigzagged skin &
+    \begin{minipage}{0.2\textwidth}
+    \includegraphics[width=\linewidth]{Results/dreambooth_120_noprior_zebraskin0.jpg}
+    \end{minipage}
+    \hspace{-0.2cm}
+    \begin{minipage}{0.2\textwidth}
+    \includegraphics[width=\linewidth]{Results/dreambooth_120_noprior_zebraskin1.jpg}
+    \end{minipage}
+    \hspace{-0.2cm}
+    \begin{minipage}{0.2\textwidth}
+    \includegraphics[width=\linewidth]{Results/dreambooth_120_noprior_zebraskin2.jpg}
+    \end{minipage}
+    \hspace{-0.2cm}
+    \begin{minipage}{0.2\textwidth}
+    \includegraphics[width=\linewidth]{Results/dreambooth_120_noprior_zebraskin3.jpg}
+    \end{minipage}\\
+    Two zebras &
+    \begin{minipage}{0.2\textwidth}
+    \includegraphics[width=\linewidth]{Results/dreambooth_120_noprior_twozebras0.jpg}
+    \end{minipage}
+    \hspace{-0.2cm}
+    \begin{minipage}{0.2\textwidth}
+    \includegraphics[width=\linewidth]{Results/dreambooth_120_noprior_twozebras1.jpg}
+    \end{minipage}
+    \hspace{-0.2cm}
+    \begin{minipage}{0.2\textwidth}
+    \includegraphics[width=\linewidth]{Results/dreambooth_120_noprior_twozebras2.jpg}
+    \end{minipage}
+    \hspace{-0.2cm}
+    \begin{minipage}{0.2\textwidth}
+    \includegraphics[width=\linewidth]{Results/dreambooth_120_noprior_twozebras3.jpg}
+    \end{minipage}\\
+    \end{tblr}
+    \caption{Images générées à partir des prompts dans la colonne de gauche via Dreambooth sur les 120 images de la classe zigzagged du dataset DTD \textbf{sans prior preservation loss}}
+\end{table}
+\vspace{-0.5cm}
+Pour tenter de résoudre ce problème, le même entraînement a été réalisé en rajoutant la \textit{prior preservation loss} de l'article. La classe préservée est "texture". Le script d'HuggingFace demande un dossier contenant un certain nombre $n$ d'images de la classe à préserver. Si le nombre d'images dans ce dossier est inférieur à $n$, des images sont générées via le modèle pré-entraîné jusqu'à arriver au nombre $n$ exigé. Dans notre cas, nous avons laissé le modèle Stable Diffusion 2.1 générer 200 images de texture, dont un échantillon est présenté dans la table \ref{sample_texture_preservation} (certaines sont plutôt artistiques, d'autres semblent incongrues voire cauchemardesques)
+\begin{table}[H]
+    \centering
+    \begin{tblr}{colspec={X[c]},
+    rowhead = 0,
+    rowsep = 0pt
+    }
+    \begin{minipage}{0.2\textwidth}
+    \includegraphics[width=\linewidth]{Results/preservation_texture_14.jpg}
+    \end{minipage}
+    \hspace{-0.25cm}
+    \begin{minipage}{0.2\textwidth}
+    \includegraphics[width=\linewidth]{Results/preservation_texture_101.jpg}
+    \end{minipage}
+    \hspace{-0.25cm}
+    \begin{minipage}{0.2\textwidth}
+    \includegraphics[width=\linewidth]{Results/preservation_texture_21.jpg}
+    \end{minipage}
+    \hspace{-0.25cm}
+    \begin{minipage}{0.2\textwidth}
+    \includegraphics[width=\linewidth]{Results/preservation_texture_103.jpg}
+    \end{minipage}\\
+    \begin{minipage}{0.2\textwidth}
+    \includegraphics[width=\linewidth]{Results/preservation_texture_145.jpg}
+    \end{minipage}
+    \hspace{-0.25cm}
+    \begin{minipage}{0.2\textwidth}
+    \includegraphics[width=\linewidth]{Results/preservation_texture_106.jpg}
+    \end{minipage}
+    \hspace{-0.25cm}
+    \begin{minipage}{0.2\textwidth}
+    \includegraphics[width=\linewidth]{Results/preservation_texture_197.jpg}
+    \end{minipage}
+    \hspace{-0.25cm}
+    \begin{minipage}{0.2\textwidth}
+    \includegraphics[width=\linewidth]{Results/preservation_texture_183.jpg}
+    \end{minipage}\\
+    \end{tblr}
+    \caption{Echantillon d'images générées par le modèle pré-entraîné pour préserver la classe texture}
+    \label{sample_texture_preservation}
+\end{table}
+
+La qualité des images de zigzag générées après entraînement est similaire à celle obtenue sans prior preservation :
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=10cm]{Results/dreambooth_120_prior_399e.jpg}
+    \caption{Images générées avec le prompt "a dtd\_zigzagged texture" au bout de 399 epochs d'entraînement}
+\end{figure}
+
+En revanche, les images de texture générées sont bien plus diversifiées ! L'ajout de la nouvelle loss a bien un effet notable.
+\begin{adjustwidth}{-3cm}{-3cm}
+\begin{minipage}{1.0\linewidth}
+    \begin{table}[H]
+        \centering
+        \begin{tblr}{colspec={X[c]},
+        rowhead = 0,
+        rowsep = 0pt
+        }
+        \begin{minipage}{3cm}
+        \includegraphics[width=\linewidth]{Results/texture_0.jpg}
+        \end{minipage}
+        \hspace{-0.25cm}
+        \begin{minipage}{3cm}
+        \includegraphics[width=\linewidth]{Results/texture_1.jpg}
+        \end{minipage}
+        \hspace{-0.25cm}
+        \begin{minipage}{3cm}
+        \includegraphics[width=\linewidth]{Results/texture_2.jpg}
+        \end{minipage}
+        \begin{minipage}{3cm}
+        \includegraphics[width=\linewidth]{Results/texture_prior_0.jpg}
+        \end{minipage}
+        \hspace{-0.25cm}
+        \begin{minipage}{3cm}
+        \includegraphics[width=\linewidth]{Results/texture_prior_1.jpg}
+        \end{minipage}
+        \hspace{-0.25cm}
+        \begin{minipage}{3cm}
+        \includegraphics[width=\linewidth]{Results/texture_prior_2.jpg}
+        \end{minipage}\\
+        \end{tblr}
+        \vspace{-0.2cm}
+        \caption{Images générées pour le prompt "a texture" (à gauche : sans preservation loss, à droite : avec preservation loss)}
+    \end{table}
+\end{minipage}
+\end{adjustwidth}
+\vspace{0.5cm}
+Cependant, le problème pour des images en dehors de la classe préservée n'est pas réglé par l'ajout de ce terme dans la fonction de perte.
+\begin{table}[H]
+    \centering
+    \begin{tblr}{colspec={X[1,l]X[8,c]},
+    rowhead = 1,
+    row{1} = {font=\bfseries},
+    rowsep = 1pt
+    }
+    Prompt & Échantillon d'images générées \\
+    Zebras with dtd\_zigzagged skin &
+    \begin{minipage}{0.2\textwidth}
+    \includegraphics[width=\linewidth]{Results/dreambooth_120_prior_zebraskin0.jpg}
+    \end{minipage}
+    \hspace{-0.2cm}
+    \begin{minipage}{0.2\textwidth}
+    \includegraphics[width=\linewidth]{Results/dreambooth_120_prior_zebraskin1.jpg}
+    \end{minipage}
+    \hspace{-0.2cm}
+    \begin{minipage}{0.2\textwidth}
+    \includegraphics[width=\linewidth]{Results/dreambooth_120_prior_zebraskin2.jpg}
+    \end{minipage}
+    \hspace{-0.2cm}
+    \begin{minipage}{0.2\textwidth}
+    \includegraphics[width=\linewidth]{Results/dreambooth_120_prior_zebraskin3.jpg}
+    \end{minipage}\\
+    Two zebras &
+    \begin{minipage}{0.2\textwidth}
+    \includegraphics[width=\linewidth]{Results/dreambooth_120_prior_twozebras0.jpg}
+    \end{minipage}
+    \hspace{-0.2cm}
+    \begin{minipage}{0.2\textwidth}
+    \includegraphics[width=\linewidth]{Results/dreambooth_120_prior_twozebras1.jpg}
+    \end{minipage}
+    \hspace{-0.2cm}
+    \begin{minipage}{0.2\textwidth}
+    \includegraphics[width=\linewidth]{Results/dreambooth_120_prior_twozebras2.jpg}
+    \end{minipage}
+    \hspace{-0.2cm}
+    \begin{minipage}{0.2\textwidth}
+    \includegraphics[width=\linewidth]{Results/dreambooth_120_prior_twozebras3.jpg}
+    \end{minipage}\\
+    \end{tblr}
+    \caption{Images générées à partir des prompts dans la colonne de gauche via Dreambooth sur les 120 images de la classe zigzagged du dataset DTD \textbf{avec prior preservation loss}}
+\end{table}
+
+Nous avons également regardé l'évolution des images générées pendant l'entraînement pour le prompt "two zebras" sur 800 epochs, en utilisant seulement 10 images sélectionnées aléatoirement sans prior preservation, pour mesurer l'impact du nombre d'images fourni en entrée (d'après l'article, 3 à 5 images sont suffisantes pour faire apprendre un nouveau concept au modèle). Les résultats sont présentés dans le tableau \ref{dreambooth_10}. Le modèle semble réussir à générer des images de zèbre non influencées par l'entraînement jusqu'à l'epoch 300, à partir de laquelle on commence à observer plus de zigzags sur la peau des zèbres. A partir de l'epoch 400, les images de zèbres sont progressivement remplacées par des images de textures de zigzags. Ce comportement est observé vers l'epoch 750 lorsque les 120 images de la classe sont utilisées. Le meilleur moyen de réduire le catastrophic forgetting observé semble donc de limiter le nombre d'epochs d'entraînement.
+
+\begin{table}[H]
+    \centering
+    \begin{tblr}{colspec={X[1,c]X[9,c]},
+    colsep = 0pt,
+    rowhead = 1,
+    row{1} = {font=\bfseries},
+    rowsep = 0pt
+    }
+    Epoch & Échantillon d'images générées \\
+    150 & \begin{minipage}{0.8\textwidth}
+    \includegraphics[width=\linewidth]{Results/dreambooth_10_twozebras_e150.png}
+    \end{minipage}\\
+    300 & \begin{minipage}{0.8\textwidth}
+    \includegraphics[width=\linewidth]{Results/dreambooth_10_twozebras_e300.png}
+    \end{minipage}\\
+    400 & \begin{minipage}{0.8\textwidth}
+    \includegraphics[width=\linewidth]{Results/dreambooth_10_twozebras_e400.png}
+    \end{minipage}\\
+    450 & \begin{minipage}{0.8\textwidth}
+    \includegraphics[width=\linewidth]{Results/dreambooth_10_twozebras_e450.png}
+    \end{minipage}\\
+    600 & \begin{minipage}{0.8\textwidth}
+    \includegraphics[width=\linewidth]{Results/dreambooth_10_twozebras_e600.png}
+    \end{minipage}\\
+    800 & \begin{minipage}{0.8\textwidth}
+    \includegraphics[width=\linewidth]{Results/dreambooth_10_twozebras_e800.png}
+    \end{minipage}\\
+    \end{tblr}
+    \caption{Images générées à partir du prompt "two zebras" pour différentes epochs d'entraînement sur 10 images de la classe zigzagged du dataset DTD}
+    \label{dreambooth_10}
+\end{table}
+\vspace{-0.5cm}
+Dreambooth est donc une méthode très puissante et très rapide pour faire apprendre UN nouveau concept à un LDM à partir de très peu d'images. Le seul réel inconvénient de cette méthode est la facilité avec laquelle l'apprentissage du nouveau concept efface les connaissances du pre-training, ce qui pose problème si on veut se servir de cette méthode pour finetuner sur plusieurs classes (seule la dernière classe entraînée risque d'être retenue par le modèle), ou si l'on souhaite pouvoir réutiliser les connaissances du pré-entraînement conjointement au nouveau concept. Dans notre cas, un entraînement sur les 120 images d'une classe pour 100 epochs semble être suffisant pour incorporer un nouveau concept. Un tel entraînement prendrait environ 8 minutes sur un GPU A100. Nous n'avons pas essayé de faire apprendre un second concept à un modèle entraîné sur lequel un premier concept aurait déjà été rajouté via Dreambooth.
+Utiliser moins d'images pour l'entraînement permet un apprentissage plus rapide, mais réduit logiquement la diversité des images générées et augmente le risque de catastrophic forgetting / language drift observé (il faut faire plus attention au nombre d'epochs pour l'entraînement). \par
+Un \href{https://github.com/huggingface/diffusers/tree/main/examples/research_projects/multi_subject_dreambooth}{script expérimental} est proposé dans la libraire diffusers pour permettre l'apprentissage de plusieurs concepts en parallèle via Dreambooth, mais les résultats ne sont pas très bons d'après la communauté : \url{https://github.com/huggingface/diffusers/issues/2599}
+
+
+\subsubsection{LoRA}
+
+La méthode \textit{\textbf{Lo}w-\textbf{R}ank \textbf{A}daptation} (LoRA) a à l'origine été proposée pour finetuner de manière efficace les grands modèles de langage (LLM) comportant plusieurs dizaines de milliards de paramètres, tels que GPT-3 (175B paramètres). Les auteurs de l'article introduisant cette méthode \cite{LoRA} s'inspirent des résultats d'autres équipes \cite{li2018measuring} \cite{aghajanyan2020intrinsic} ayant montré que les LLMs sont souvent sur-paramétrés : la dimension du paramètre $\theta$ optimisé par un réseau de neurones pour résoudre une tâche donnée est généralement plus grande que la dimension minimale permettant d'obtenir une solution (définie comme \textit{dimension intrinsèque} par les auteurs de \cite{li2018measuring}). LoRA repose sur l'hypothèse que le finetuning d'un modèle pré-entraîné peut également être réalisé sur un espace de faible dimension (i.e. avec des matrices de poids de rang faible) avec des performances équivalentes à un entraînement réalisé sur l'ensemble des paramètres. L'entraînement via LoRA s'appuie sur 3 idées principales, illustrées sur la figure \ref{lora} :
+\begin{enumerate}
+    \vspace{-0.2cm}
+    \item \underline{Injection de poids d'entraînement}\\
+    Plutôt que de finetuner tous les poids du modèle pré-entraîné initial, les auteurs décomposent les matrices $W$ du modèle finetuné ainsi : $W  = W_0 + \Delta W$, avec 
+    \begin{itemize}[noitemsep,topsep=0pt,parsep=0pt,partopsep=0pt]
+        \vspace{-0.2cm}
+        \item $W_0$ poids gelés du modèle pre-entraîné (non modifiés pendant le finetuning)
+        \item $\Delta W$ matrice de poids injectée, de même dimension que $W_0$
+    \end{itemize}
+    Un même modèle pre-entraîné peut donc être utilisé pour différentes sous-tâches simplement en remplaçant les matrices $\Delta W$ finetunées, ce qui éviter d'avoir à générer un nouveau modèle complet à chaque finetuning
+    \item \underline{Décomposition en matrices de rang faible}\\
+    L'hypothèse de rang faible se traduit par la décomposition de la matrice $\Delta W \in \mathbb{R}^{d \times h}$ comme le produit de 2 matrices $A \in \mathbb{R}^{d \times r}$ et $B \in \mathbb{R}^{r \times h}$ : $\Delta W = A \cdot B$ avec $r \ll \min(d, h)$. Ainsi, pour chaque matrice de poids à finetuner, seules les matrices $A$ et $B$ sont entraînées, ce qui revient à entraîner uniquement $r \times (d+h)$ paramètres au lieu de $d \times h$. Typiquement, pour GPT-3, un rang $r$ de 2 ou 4 suffit à donner de bons résultats, alors que le rang des matrices $W_0$ atteint 12 288 lors du pré-entraînement. Cette amélioration permet dans ce cas de réduire le nombre de paramètres entraînables par 10 000 et la RAM occupée par le modèle par 3. Un rang de 4 est utilisé par défaut dans \href{https://github.com/huggingface/diffusers/blob/main/examples/text_to_image/train_text_to_image_lora.py}{le script fourni dans diffusers} pour Stable Diffusion.\\
+    La forme des matrices de poids du modèle finetuné final est donc $W = W_0 + A \cdot B$
+    \item \underline{Entraînement des couches d'attention uniquement}\\
+    Les auteurs n'ont testé leur méthode que sur les couches d'attention (ce qui semble logique pour une première approche sur des architectures de type transformer) et obtenaient déjà de bons résultats, mais n'excluent pas de généraliser la méthode à tout type de couche d'un réseau de neurones.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=18cm]{Images/Finetune_LoRA.pdf}
+    \caption{Illustration de l'adaptation de LoRA à l'architecture de Stable Diffusion}
+    \label{lora}
+\end{figure}
+
+Nous avons testé cette méthode sur le dataset Safran avec Stable Diffusion 1.5, puis avec Stable Diffusion 2.1 en réduisant la résolution des images à 512 px (les GPUs A100 n'étant pas disponibles à cette période). L'entraînement a duré environ \textbf{22 heures pour 88 epochs d'entraînement sur les 5485 images du jeu de données sur 1 GPU V100 avec 32Go de RAM}, avec une taille de batch effective de 64. Les résultats sont disponibles dans le tableau \ref{lora_drycomp}. Avec Stable Diffusion 1.5, les résultats semblent encourageants vers 25 epochs, mais finissent par dégénérer. En créant une association de tokens uniques pour notre dataset (ajout du préfixe "sf\_" comme dans la section \hyperref[sec:Finetuning_classique]{4.2.1. Finetuning classique}), les résultats obtenus sont nettement meilleurs et convergent à partir de l'epoch 20.
+
+\begin{table}[H]
+    \centering
+    \begin{tblr}{colspec={X[16,c]rX[40,c]},
+    rowhead = 1,
+    colsep = 0pt,
+    row{1} = {font=\bfseries},
+    cell{2}{1} = {r=4}{White!70!lightgray},
+    cell{6}{1} = {r=4}{White!50!ProcessBlue}
+    }
+    Prompt & Epoch & Échantillon d'images générées\\
+    \shortstack{\large dry compacted\\ \large thickness\\ \LARGE \hfill \\ \footnotesize avec Stable Diffusion 1.5} & 1 &
+    \begin{minipage}{0.55\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_drycompthick_e1_sd1.jpg}
+    \end{minipage}\\[-0.15cm]
+    & 10 & 
+    \begin{minipage}{0.55\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_drycompthick_e10_sd1.jpg}
+    \end{minipage}\\[-0.15cm]
+    & 25 &
+    \begin{minipage}{0.55\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_drycompthick_e25_sd1.jpg}
+    \end{minipage}\\[-0.15cm]
+    & 42 &
+    \begin{minipage}{0.55\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_drycompthick_e42_sd1.jpg}
+    \end{minipage}\\[-0.05cm]
+    %\large sf\_dry sf\_compacted sf\_thickness\\ \footnotesize avec Stable Diffusion 2.1 & 1 &
+    \shortstack{\large sd\_dry sd\_compacted\\ \large sf\_thickness\\ \LARGE \hfill \\ \footnotesize avec Stable Diffusion 2.1} & 1 &
+    \begin{minipage}{0.55\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_drycompthick_e1.jpg}
+    \end{minipage}\\[-0.15cm]
+    & 3 & 
+    \begin{minipage}{0.55\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_drycompthick_e3.jpg}
+    \end{minipage}\\[-0.15cm]
+    & 10 & 
+    \begin{minipage}{0.55\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_drycompthick_e10.jpg}
+    \end{minipage}\\[-0.15cm]
+    & 20 &
+    \begin{minipage}{0.55\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_drycompthick_e20.jpg}
+    \end{minipage}\\[-0.15cm]
+    \end{tblr}
+    \caption{Images générées à partir des prompts dans la colonne de gauche après finetuning avec LoRA sur DTD pour différentes epoch d'entraînement}
+    \label{lora_drycomp}
+\end{table}
+
+L'utilisation d'un prompt spécifique est donc très importante tant pour la qualité des images obtenues que pour la rapidité de convergence. Des exemples d'images générées à partir du modèle finetuné sur Stable Diffusion 2.1 pour les autres classes sont présentées dans le tableau \ref{lora_all}.
+
+\begin{table}[H]
+    \centering
+    \begin{tblr}{colspec={m{1.5cm}c||cm{1.2cm}},
+    rowhead = 1,
+    row{1} = {font=\bfseries},
+    rowsep = 1pt,
+    colsep = 2pt
+    }
+    Prompt & Échantillon d'images générées & Échantillon d'images générées & Prompt\\
+    sf\_dry sf\_thick\-ness &
+    \begin{minipage}{0.13\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_dry_thickness0.jpg}
+    \end{minipage}
+    \hspace{-0.2cm}
+    \begin{minipage}{0.13\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_dry_thickness1.jpg}
+    \end{minipage}
+    \hspace{-0.2cm}
+    \begin{minipage}{0.13\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_dry_thickness2.jpg}
+    \end{minipage} & 
+    \begin{minipage}{0.13\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_dry_warp0.jpg}
+    \end{minipage}
+    \hspace{-0.2cm}
+    \begin{minipage}{0.13\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_dry_warp1.jpg}
+    \end{minipage}
+    \hspace{-0.2cm}
+    \begin{minipage}{0.13\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_dry_warp2.jpg}
+    \end{minipage} & sf\_dry sf\_warp\\
+    sf\_dry sf\_com\-pacted sf\_thick\-ness &
+    \begin{minipage}{0.13\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_drycomp_thickness0.jpg}
+    \end{minipage}
+    \hspace{-0.2cm}
+    \begin{minipage}{0.13\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_drycomp_thickness1.jpg}
+    \end{minipage}
+    \hspace{-0.2cm}
+    \begin{minipage}{0.13\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_drycomp_thickness2.jpg}
+    \end{minipage} & 
+    \begin{minipage}{0.13\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_dry_weft0.jpg}
+    \end{minipage}
+    \hspace{-0.2cm}
+    \begin{minipage}{0.13\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_dry_weft1.jpg}
+    \end{minipage}
+    \hspace{-0.2cm}
+    \begin{minipage}{0.13\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_dry_weft2.jpg}
+    \end{minipage} & sf\_dry sf\_weft\\
+    sf\_dry sf\_com\-pacted sf\_warp &
+    \begin{minipage}{0.13\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_drycomp_warp0.jpg}
+    \end{minipage}
+    \hspace{-0.2cm}
+    \begin{minipage}{0.13\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_drycomp_warp1.jpg}
+    \end{minipage}
+    \hspace{-0.2cm}
+    \begin{minipage}{0.13\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_drycomp_warp2.jpg}
+    \end{minipage} & 
+    \begin{minipage}{0.13\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_drycomp_weft0.jpg}
+    \end{minipage}
+    \hspace{-0.2cm}
+    \begin{minipage}{0.13\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_drycomp_weft1.jpg}
+    \end{minipage}
+    \hspace{-0.2cm}
+    \begin{minipage}{0.13\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_drycomp_weft2.jpg}
+    \end{minipage} & sf\_dry sf\_com\-pacted sf\_weft\\
+    sf\_in\-jected sf\_thick\-ness &
+    \begin{minipage}{0.13\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_injected_thickness0.jpg}
+    \end{minipage}
+    \hspace{-0.2cm}
+    \begin{minipage}{0.13\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_injected_thickness1.jpg}
+    \end{minipage}
+    \hspace{-0.2cm}
+    \begin{minipage}{0.13\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_injected_thickness2.jpg}
+    \end{minipage} & 
+    \begin{minipage}{0.13\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_injected_warp0.jpg}
+    \end{minipage}
+    \hspace{-0.2cm}
+    \begin{minipage}{0.13\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_injected_warp1.jpg}
+    \end{minipage}
+    \hspace{-0.2cm}
+    \begin{minipage}{0.13\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_injected_warp2.jpg}
+    \end{minipage} & sf\_in\-jected sf\_warp\\
+    sf\_in\-jected sf\_weft &
+    \begin{minipage}{0.13\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_injected_weft0.jpg}
+    \end{minipage}
+    \hspace{-0.2cm}
+    \begin{minipage}{0.13\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_injected_weft1.jpg}
+    \end{minipage}
+    \hspace{-0.2cm}
+    \begin{minipage}{0.13\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_injected_weft2.jpg}
+    \end{minipage} & 
+    \begin{minipage}{0.13\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_horse0.jpg}
+    \end{minipage}
+    \hspace{-0.2cm}
+    \begin{minipage}{0.13\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_horse1.jpg}
+    \end{minipage}
+    \hspace{-0.2cm}
+    \begin{minipage}{0.13\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_horse2.jpg}
+    \end{minipage} & horse on a beach\\
+    sf\_com\-pacted &
+    \begin{minipage}{0.13\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_compacted0.jpg}
+    \end{minipage}
+    \hspace{-0.2cm}
+    \begin{minipage}{0.13\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_compacted1.jpg}
+    \end{minipage}
+    \hspace{-0.2cm}
+    \begin{minipage}{0.13\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_compacted2.jpg}
+    \end{minipage} & 
+    \begin{minipage}{0.13\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_compacted3.jpg}
+    \end{minipage}
+    \hspace{-0.2cm}
+    \begin{minipage}{0.13\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_compacted4.jpg}
+    \end{minipage}
+    \hspace{-0.2cm}
+    \begin{minipage}{0.13\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_compacted5.jpg}
+    \end{minipage} & sf\_com\-pacted
+    \end{tblr}
+    \caption{Images générées à partir des prompts dans les colonnes extérieures suite au finetuning via LoRA avec Stable Diffusion 2.1}
+    \label{lora_all}
+\end{table}
+Les images générées sont très fidèles aux images d'entraînement, leur qualité est très bonne. LoRA semble donc tenir ses promesses : rendre l'entraînement plus efficace sans perte de qualité pour les images générées. \href{https://www.semianalysis.com/p/google-we-have-no-moat-and-neither}{L'appréhension générée par cette méthode parmi les équipes de Google} semble donc justifiée. \par
+Le prompt "horse on a beach" a été utilisé pour évaluer l'overfitting / le risque de catastrophic forgetting lié à cette méthode d'entraînement. Il est intéressant de noter que, malgré un entraînement sur des images uniquement en noir et blanc, les images générées sont toutes en couleur; le cheval reste cependant toujours noir / très sombre, avec peu de détails sur l'animal en lui-même. Si la seconde image est rassurante quant aux capacités de rétention du \textit{prior} du modèle, la première photo générée révèle tout de même un début de dérive linguistique : l'arrière-plan est constitué de motifs ressemblant à une coupe "dry compacted thickness" jaunâtre. Il y a donc bien un risque d'overfitting avec LoRA, mais il semble plus facile à maîtriser que pour Dreambooth. Le modèle utilisé a été entraîné sur 88 epochs alors que images de bonnes qualité étaient déjà générées à partir de l'epoch 18 : l'early stoppping semble donc une solution valable pour limiter ce problème. \par
+La dernière ligne du tableau montre des images générées pour le prompt "sf\_compacted", qui correspond à une classe qui n'existe pas seule dans le jeu de données (elle est toujours lié au concept sf\_dry). Les images générées ressemblent à une interpolation entre les classes dry compacted et injected, tout en restant plus proches de la classe dry compacted : les images de thickness ont l'air plus aplaties / moins fibreuses que des dry compacted classiques, les images warp et weft sont moins zoomées et se rapprochent plus des images injected. Le modèle a donc bien réussi à intégrer les différents concepts sémantiques du jeu de données. \par
+Pour rester fidèle à l'article initial, l'implémentation utilisée n'appliquait LoRA qu'aux couches d'attention du U-Net. Cependant, cloneofsimo (développeur dont l'implémentation de LoRA a été reprise dans la librairie diffusers) propose également sur \href{https://github.com/cloneofsimo/lora}{son repository GitHub} une extension de LoRA aux paramètres des couches ResNet du U-Net.
+
+Un des autres avantages de LoRA est que cette méthode de finetuning est orthogonale aux autres méthodes présentées auparavant. Elle peut notamment être combinée à Dreambooth pour rendre l'apprentissage d'un concept encore plus efficace, à condition d'ajuster les hyperparamètres d'entraînement. Le tableau ci-dessous présente les résultats obtenus lors du finetuning de Stable Diffusion 2.1 via LoRA  + Dreambooth sur les 4 concepts suivants : dry (associé à l'identifiant \textit{w17h3r}), thickness (associé à l'identifiant \textit{th1ck}), warp (associé à l'identifiant \textit{w@rp}) et injected (associé à l'identifiant \textit{1nj3C7}). De même que pour Textual Inversion, pour chacun des concepts, nous avons utilisé 3 images de chaque type tirées au hasard, soit 9 images par concept (e.g. 3 "dry thickness", 3 "dry warp" et 3 "dry weft" pour le concept \textit{dry}). L'entraînement dure environ \textbf{12 minutes pour 500 epochs d'entraînement sur 9 images sur 1 GPU V100 avec 32Go de RAM}, avec une taille de batch effective de 64.
+
+\begin{table}[H]
+    \centering
+    \begin{tblr}{colspec={m{3cm}c},
+    rowhead = 1,
+    row{1} = {font=\bfseries},
+    rowsep = 1pt
+    }
+    Prompt & Échantillon d'images générées \\
+    Images initiales avant entraînement (\textit{n'est pas un prompt}) &
+    \begin{minipage}{0.7\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_db_init.jpg}
+    \end{minipage}\\
+    A [w17h3r] slice of carbon composite material &
+    \begin{minipage}{0.7\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_db_dry.jpg}
+    \end{minipage}\\
+    A dry [th1ck] slice of carbon composite material &
+    \begin{minipage}{0.7\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_db_thick.jpg}
+    \end{minipage}\\
+    A dry [w@rp] slice of carbon composite material &
+    \begin{minipage}{0.7\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_db_warp.jpg}
+    \end{minipage}\\
+    An [1nj3C7] slice of carbon composite material &
+    \begin{minipage}{0.7\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_db_injected.jpg}
+    \end{minipage}\\
+    \end{tblr}
+    \caption{Images générées à partir des prompts dans la colonne de gauche via LoRA + Dreambooth sur 9 images sans prior preservation loss. Les identifiers utilisés pour l'apprentissage sont placés entre crochets dans le prompt par soucis de visibilité (crochets non inclus dans le prompt de génération)}
+\end{table}
+\vspace{-0.5cm}
+Les images obtenues sont de très bonnes qualité et fidèles aux images du dataset d'entraînement, seules une dizaine de minutes sont nécessaires pour l'entraînement. Les prompts 1nj3C7 et w17h3r permettent bien de générer des images de thickness et de warp, mais le modèle ne connaît qu'un seul concept à la fois : avec la méthode utilisée on ne contrôle pas si une image injected générée sera de thickness, warp ou weft. Ce problème peut facilement être résolu en finetunant sur chacune des 9 sous-catégories du dataset Safran (cf. \ref{dataset_Safran}). Le fait que LoRA injecte de nouvelles matrices de poids, et conserve le modèle original gelé, aide même à réduire les problèmes d'overfitting observés précédemment, comme l'illustrent les images suivantes, générées à partir du prompt "horse on a beach" avec le modèle finetuné sur les images injected. L'unique inconvénient de cette méthode est donc qu'elle est difficilement généralisable à plusieurs concepts.
+\begin{table}[H]
+    \centering
+    \begin{tblr}{colspec={m{2cm}c},
+    rowhead = 1,
+    row{1} = {font=\bfseries},
+    rowsep = 1pt
+    }
+    Prompt & Échantillon d'images générées \\
+    Horse on a beach &
+    \begin{minipage}{0.2\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_db_horse0.jpg}
+    \end{minipage}
+    \hspace{-0.2cm}
+    \begin{minipage}{0.2\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_db_horse1.jpg}
+    \end{minipage}
+    \hspace{-0.2cm}
+    \begin{minipage}{0.2\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_db_horse2.jpg}
+    \end{minipage}
+    \hspace{-0.2cm}
+    \begin{minipage}{0.2\textwidth}
+    \includegraphics[width=\linewidth]{Results/lora_db_horse3.jpg}
+    \end{minipage}
+    \end{tblr}
+    \caption{Images générées à partir du prompt "horse on a beach" avec le modèle finetuné via LoRA + Dreambooth sur 9 images injected du dataset Safran}
+\end{table}
+
+LoRA peut également être utilisée en combinaison avec Textual Inversion et Dreambooth, dans une méthode que cloneofsimo appelle \textbf{Pivotal Tuning} en s'inspirant d'un travail réalisé sur des GANs \cite{roich2021pivotal}. Le principe est de commencer par apprendre un nouvel embedding textuel via Textual Inversion, puis d'utiliser cet embedding conjointement avec la \textit{prior preservation loss} de Dreambooth pour obtenir des résultats de meilleure qualité. Le script implémentant cette méthode, que nous n'avons pas testé, est disponible à cette URL : \url{https://github.com/cloneofsimo/lora/blob/master/training_scripts/run_lorpt.sh}.
+
+
+\subsubsection{Récapitulatif}
+
+Le tableau ci-dessous résume les avantages et inconvénients des différentes méthodes de finetuning testées au cours de notre projet.
+\DefTblrTemplate{caption}{default}{}
+\DefTblrTemplate{capcont}{default}{}
+
+\begin{longtblr}{width=\textwidth,    
+cells={valign=m,halign=l},
+colspec={Q|X|X|X},
+rowhead = 1,
+row{1} = {c, font=\bfseries},
+rowsep = 5pt,
+hline{3, 4, 5, 6}={dashed},
+}
+Méthode & Forces & Faiblesses & Commentaires \\
+\hline
+Finetuning classique & - \quad Entraînement multi-concepts / multi-classes \newline - \quad Résultats de très bonne qualité \newline - \quad Méthode classique : sélection standard d'hyperparamètres, de régularisation, etc. & Entraînement long et peu efficace &  Méthode peu intéressante, LoRA propose des résultats de qualité équivalente en moins de temps et en utilisant moins de ressources \\
+Textual Inversion & - \quad Entraînement relativement efficace \newline - \quad Conservation des poids du modèle initial : pas de risque d'oubli de concepts ou d'overfitting \newline - \quad Embeddings générés de petite taille, facilement combinables & Qualité d'images moins bonne qu'avec Dreambooth (concept unique) ou LoRA (multi-concepts) & Méthode intéressante en combinaison avec LoRA ou Dreambooth, mais moins efficace que ces 2 méthodes quand utilisée seule \\
+Dreambooth &  - \quad Entraînement très efficace \newline - \quad Excellente qualité d'images générées & - \quad Utilisable pour l'apprentissage \textbf{d'un seul concept} \newline - \quad Fort risque d'overfitting / catastrophic forgetting / language drift & Méthode très efficace pour l'apprentissage d'un seul concept, encore plus efficace quand combinée avec LoRA\\
+LoRA & - \quad Entraînement très efficace \newline - \quad Excellente qualité d'images générées \newline - \quad Conservation des poids du modèle initial : réduit le risque d'oubli de concepts \newline - \quad Matrices de poids générées de petite taille, facilement combinables & \centering $\varnothing$ & Méthode la plus appropriée pour du finetuning multi-classes  \\
+Dreambooth \newline + LoRA & - \quad Entraînement très efficace \newline - \quad Excellente qualité d'images générées \newline - \quad Conservation des poids du modèle initial : réduit le risque d'oubli de concepts \newline - \quad Matrices de poids générées de petite taille, facilement combinables & Utilisable pour l'apprentissage \textbf{d'un seul concept} &  Méthode la plus appropriée pour l'incorporation d'un nouveau concept à un modèle pré-entraîné\\
+\hline
+\end{longtblr}
+
+Les différentes méthodes testées permettent donc de grandement améliorer l'efficacité de l'entraînement, rendant le finetuning d'un LDM réellement accessible à tous. En revanche, les problèmes liés à la durée d'échantillonnage sont toujours présents. \par
+Un autre point d'attention est la forte dépendance de toutes ces méthodes aux prompts utilisés pendant l'entraînement
+\begin{itemize}
+	\item Token d'initialisation pour Textual inversion
+	\item Légende de chaque image pour LoRA (cf. tableau \ref{lora_drycomp})
+	\item Embedding à réapprendre pour Dreambooth
+\end{itemize}
+Le prompt utilisé a finalement plus d'importance que la configuration précise des hyperparamètres, et comme avec toute méthode s'appuyant sur du texte, trouver le prompt idél n'est pas toujours évident.
+
+\clearpage
+\printbibliography[heading=bibintoc]
+
+\end{document}
